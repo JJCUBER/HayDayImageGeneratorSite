@@ -1,1 +1,80 @@
-<p> Placeholder until the actual source files are cleaned up a bit and imported into this repository. <p>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Hay Day Image Generator</title>
+
+        <!-- Using the unminified version since it might help me debug any issues; might want to eventually use https://code.jquery.com/jquery-3.6.4.min.js -->
+        <!-- Got the integrity sha/hash using https://www.srihash.org/ (found out about it here: https://stackoverflow.com/questions/51254596/how-to-get-the-integrity-value-for-a-jquery-version-for-script ); I decided to stick with the sha384 it defaults to.  I'm unsure whether to append the attribute: referrerpolicy="no-referrer" -->
+        <script src="https://code.jquery.com/jquery-3.6.4.js" integrity="sha384-SCPawFAkxFucxzK6X4Gpg3lmBZqjjmM8ghZCRH8hW4C+k4wCVXFd862J1juShkQ7" crossorigin="anonymous"></script>
+
+        <!-- Using the unminified version of math js; this is mainly for processing equations in the quantity input field, since I want to avoid using eval() [it also processes code, not just equations].  More info here: https://mathjs.org/download.html and https://cdnjs.com/libraries/mathjs -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.js" integrity="sha512-jVMFsAksn8aljb9IJ+3OCAq38dJpquMBjgEuz7Q5Oqu5xenfin/jxdbKw4P5eKjUF4xiG/GPT5CvCX3Io54gyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.js" integrity="sha512-zPMZ/3MBK+R1rv6KcBFcf7rGwLnKS+xtB2OnWkAxgC6anqxlDhl/wMWtDbiYI4rgi/NrCJdXrmNGB8pIq+slJQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+        <link rel="stylesheet" href="style.css">
+
+        <script src="script.js"></script>
+    </head>
+    <body>
+        <h2>Options</h2>
+
+        <label for="itemsPerRowSlider">Items Per Row</label>
+        <input type="range" min="1" max="12" id="itemsPerRowSlider">
+        <label id="itemsPerRowLabel">8</label>
+
+        <button id="settingsButton" style="margin-left: 20px;">Settings</button>
+
+        <div style="height: 20px;"></div>
+        <hr>
+
+        <h2>Add/Modify Item</h2>
+
+        <label for="itemNameInput">Name</label>
+        <input type="text" id="itemNameInput">
+
+        <label for="itemQuantityInput">Quantity</label>
+        <input type="text" id="itemQuantityInput" value=1>
+
+        <label for="itemPriceOrMultiplierInput">Price/Multiplier</label>
+        <input type="text" id="itemPriceOrMultiplierInput" value="5x">
+
+        <button id="copyImageToClipboardButton">Copy Image to Clipboard</button>
+        <i>(Press enter inside any textbox to submit pending item changes)</i>
+
+        <div style="height: 20px;"></div>
+        <hr>
+        <div style="height: 20px;"></div>
+
+        <div id="screenshotRegion">
+            <table id="itemTable"></table>
+
+            <p id="bottomText"></p>
+        </div>
+
+        <div id="settingsOverlay">
+            <div id="settingsBackground"></div>
+            <div id="settingsBox">
+                <button id="hideSettingsButton">X</button>
+                <div id="settingsInner">
+                    <h2>Item Abbreviations (case-insensitive)</h2>
+                    <div id="abbreviationMappingTableArea">
+                        <table id="abbreviationMappingTable">
+                            <tr>
+                                <th>Abbreviation</th>
+                                <th>Expand To</th>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <hr>
+
+                    <h2>Bottom Text</h2>
+                    <input type="text" id="bottomTextSettingInput">
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+

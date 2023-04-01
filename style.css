@@ -1,0 +1,167 @@
+body
+{
+    background-color: #fff8b8;
+}
+
+h2
+{
+    text-decoration: underline;
+}
+
+
+#bottomText
+{
+    text-align: center;
+
+    font-family: Arial;
+    font-size: 50px;
+    font-weight: bold;
+
+    margin-top: 10px;
+    margin-bottom: 0px; /* this makes the screenshotRegion div wrap more tightly around this */
+}
+
+.itemCell
+{
+    position: relative;
+}
+
+.itemImage
+{
+    width: 100%;
+}
+
+
+/* the positioning for both of these labels behave weird; maybe fix at some point */
+
+.quantityLabel
+{
+    position: absolute;
+    top: 5px;
+    right: 5px;
+
+    font-family: Arial;
+    font-size: 50px;
+    font-weight: bold;
+    color: white;
+    /*
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* outline -- https://stackoverflow.com/questions/4919076/outline-effect-to-text * /
+    */
+    /*text-shadow: -1px -1px 10 #000;*/
+    -webkit-text-stroke: 2px black;
+}
+
+.priceLabel
+{
+    position: absolute;
+    -webkit-transform: translate(0%,-100%);
+    top: 2px;
+    left: 2px;
+
+    font-family: Arial;
+    font-size: 30px;
+    font-weight: bold;
+    color: yellow;
+    -webkit-text-stroke: 2px black;
+}
+
+#coin
+{
+    position: relative;
+    top: 2px;
+
+    /* nice outline */
+    /* based on https://stackoverflow.com/questions/12690444/css-border-on-png-image-with-transparent-parts */
+    --stroke-pos: 1px;
+    --stroke-neg: -1px;
+    --stroke-color: #0004;
+    filter:
+        drop-shadow(var(--stroke-pos) 0 0 var(--stroke-color)) 
+        drop-shadow(var(--stroke-neg) 0 var(--stroke-color))
+        drop-shadow(0 var(--stroke-pos) 0 var(--stroke-color))
+        drop-shadow(0 var(--stroke-neg) 0 var(--stroke-color))
+        drop-shadow(var(--stroke-pos) var(--stroke-pos) 0 var(--stroke-color)) 
+        drop-shadow(var(--stroke-pos) var(--stroke-neg) 0 var(--stroke-color))
+        drop-shadow(var(--stroke-neg) var(--stroke-pos) 0 var(--stroke-color))
+        drop-shadow(var(--stroke-neg) var(--stroke-neg) 0 var(--stroke-color));   
+}
+
+td
+{
+  border: 3px solid;
+  border-color: #00000022;
+}
+
+td:hover
+{
+  /*border-color: orange;*/
+  border-color: #ffd600;
+
+  cursor: pointer;
+}
+
+
+#screenshotRegion
+{
+    background-color: inherit; /* needed for the html-to-image library to have the right background (it seems to have CORS issues in reading my styl.css file) */
+    display: inline-block; /* makes the screenshotRegion wrap tightly around its children */
+}
+
+
+#settingsOverlay
+{
+    display: none;
+}
+
+#settingsBackground
+{
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: 100%;
+
+    background-color: #000A;
+}
+
+#settingsBox
+{
+  position: absolute;
+  top:10%;
+  left:10%;
+  width:80%;
+  height:80%;
+
+  background-color: #fffaca;
+  border-style: solid;
+  border-color: black;
+  border-width: 4px;
+  border-radius: 5px;
+}
+
+#settingsInner
+{
+    margin: 10px;
+}
+
+#hideSettingsButton
+{
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+
+#abbreviationMappingTableArea
+{
+    height: 400px;
+    overflow: auto;
+    display: inline-block;
+}
+
+
+#copyImageToClipboardButton
+{
+    margin-left: 10px;
+    margin-right: 10px;
+}
