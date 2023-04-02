@@ -41,6 +41,8 @@
         <input type="text" id="itemPriceOrMultiplierInput" value="5x">
 
         <button id="copyImageToClipboardButton">Copy Image to Clipboard</button>
+        <button id="copyAsTextListButton">Copy as Text List</button>
+
         <i>(Press enter inside any textbox to submit pending item changes)</i>
 
         <div style="height: 20px;"></div>
@@ -58,6 +60,7 @@
             <div id="settingsBox">
                 <button id="hideSettingsButton">X</button>
                 <div id="settingsInner">
+                    <div style="height: 10px;"></div>
                     <h2>Item Abbreviations (case-insensitive)</h2>
                     <div id="abbreviationMappingTableArea">
                         <table id="abbreviationMappingTable">
@@ -72,6 +75,18 @@
 
                     <h2>Bottom Text</h2>
                     <input type="text" id="bottomTextSettingInput">
+
+                    <hr>
+
+                    <h2>Text List Separator</h2>
+                    <input type="radio" name="textListSeparatorGroup" id="textListSeparatorNewlineRadio" value="&NewLine;">
+                    <label for="textListSeparatorNewlineRadio">Newline</label>
+                    <input type="radio" name="textListSeparatorGroup" id="textListSeparatorCommaRadio" value=", ">
+                    <label for="textListSeparatorCommaRadio">Comma</label>
+                    <input type="radio" name="textListSeparatorGroup" id="textListSeparatorCustomRadio">
+                    <label for="textListSeparatorCustomRadio">Custom</label>
+
+                    <input type="text" id="textListCustomSeparatorInput" style="width: 40px;" value="">
                 </div>
             </div>
         </div>

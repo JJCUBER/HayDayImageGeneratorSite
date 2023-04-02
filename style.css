@@ -28,7 +28,8 @@ h2
 
 .itemImage
 {
-    width: 100%;
+    width: 100px;
+    height: 100px;
 }
 
 
@@ -44,10 +45,7 @@ h2
     font-size: 50px;
     font-weight: bold;
     color: white;
-    /*
-    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; /* outline -- https://stackoverflow.com/questions/4919076/outline-effect-to-text * /
-    */
-    /*text-shadow: -1px -1px 10 #000;*/
+
     -webkit-text-stroke: 2px black;
 }
 
@@ -88,16 +86,15 @@ h2
 
 td
 {
-  border: 3px solid;
-  border-color: #00000022;
+    border: 3px solid;
+    border-color: #0002;
 }
 
 td:hover
 {
-  /*border-color: orange;*/
-  border-color: #ffd600;
+    border-color: #ffd600;
 
-  cursor: pointer;
+    cursor: pointer;
 }
 
 
@@ -111,6 +108,8 @@ td:hover
 #settingsOverlay
 {
     display: none;
+
+    text-align: center;
 }
 
 #settingsBackground
@@ -126,17 +125,19 @@ td:hover
 
 #settingsBox
 {
-  position: absolute;
-  top:10%;
-  left:10%;
-  width:80%;
-  height:80%;
+    position: absolute;
+    top:50%;
+    left:50%;
+    transform: translate(-50.00005%, -50%); /* the ever-so-slight offset is done since the left side of the outline of the textboxes gets weird (maybe that's only for my computer at 100%, I don't know.) */
 
-  background-color: #fffaca;
-  border-style: solid;
-  border-color: black;
-  border-width: 4px;
-  border-radius: 5px;
+    max-height: 80%;
+    overflow-y: auto;
+
+    background-color: #fffaca;
+    border-style: solid;
+    border-color: black;
+    border-width: 4px;
+    border-radius: 5px;
 }
 
 #settingsInner
@@ -154,8 +155,8 @@ td:hover
 
 #abbreviationMappingTableArea
 {
-    height: 400px;
-    overflow: auto;
+    max-height: 400px;
+    overflow-y: auto;
     display: inline-block;
 }
 
@@ -166,9 +167,3 @@ td:hover
     margin-right: 10px;
 }
 
-
-img
-{
-    width: 100px;
-    height: 100px;
-}

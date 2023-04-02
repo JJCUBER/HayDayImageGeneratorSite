@@ -1,6 +1,9 @@
 let itemsPerRow = 8;
+let textListSeparatorSelectedRadio = 0; // , textListCustomSeparator = "";
 
-let itemsPerRowSlider, itemsPerRowLabel, itemNameInput, itemQuantityInput, itemPriceOrMultiplierInput, itemTable, bottomText, screenshotRegion, settingsButton, settingsOverlay, hideSettingsButton, abbreviationMappingTable, bottomTextSettingInput;
+let itemsPerRowSlider, itemsPerRowLabel, itemNameInput, itemQuantityInput, itemPriceOrMultiplierInput, itemTable;
+let bottomText, screenshotRegion;
+let settingsButton, settingsOverlay, hideSettingsButton, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio;
 let coinImageUrl;
 $(document).ready(() =>
 {
@@ -10,6 +13,18 @@ $(document).ready(() =>
     itemQuantityInput = $("#itemQuantityInput");
     itemPriceOrMultiplierInput = $("#itemPriceOrMultiplierInput");
     itemTable = $("#itemTable");
+
+    bottomText = $("#bottomText");
+    screenshotRegion = $("#screenshotRegion");
+
+    settingsButton = $("#settingsButton");
+    settingsOverlay = $("#settingsOverlay");
+    hideSettingsButton = $("#hideSettingsButton");
+    abbreviationMappingTable = $("#abbreviationMappingTable");
+    bottomTextSettingInput = $("#bottomTextSettingInput");
+    textListSeparatorRadios = $("input[name='textListSeparatorGroup']");
+    textListCustomSeparatorInput = $("#textListCustomSeparatorInput");
+    textListSeparatorCustomRadio = $("#textListSeparatorCustomRadio");
 
 
     itemsPerRowSlider.on("input",
@@ -26,19 +41,12 @@ $(document).ready(() =>
     itemPriceOrMultiplierInput.on("keyup", handleAddingItem);
 
 
-    bottomText = $("#bottomText");
-
     const coinImagePromise = getImageUrl("Coin", 28)
         .then(imageUrl => coinImageUrl = imageUrl)
         .catch(e => console.log("Failed to get coin image url --", e));
 
-    screenshotRegion = $("#screenshotRegion");
     $("#copyImageToClipboardButton").on("click", copyImageToClipboard);
 
-
-    settingsButton = $("#settingsButton");
-    settingsOverlay = $("#settingsOverlay");
-    hideSettingsButton = $("#hideSettingsButton");
 
     settingsButton.on("click", () =>
     {
@@ -50,6 +58,7 @@ $(document).ready(() =>
     });
 
 
+
     loadAllFromLocalStorage();
     // want to update the layout after loading from local storage, but only after the coin image has loaded
     coinImagePromise.then(() =>
@@ -57,10 +66,14 @@ $(document).ready(() =>
         updateItemLayout();
     });
 
-    abbreviationMappingTable = $("#abbreviationMappingTable");
+
+
+    // these must all be after local storage is loaded (since their initial values change depending on what the user's settings had saved)
+
+
     setUpAbbreviationMappingTable();
 
-    bottomTextSettingInput = $("#bottomTextSettingInput");
+
     bottomTextSettingInput.val(bottomText.text());
     bottomTextSettingInput.change(event =>
     {
@@ -75,6 +88,32 @@ $(document).ready(() =>
     {
         saveAllToLocalStorage();
     });
+
+
+    textListSeparatorRadios.eq(textListSeparatorSelectedRadio).attr("checked", true);
+    textListCustomSeparatorInput[0].disabled = textListSeparatorRadios[textListSeparatorSelectedRadio].id !== "textListSeparatorCustomRadio";
+
+    textListSeparatorRadios.each((i, elem) =>
+    {
+        $(elem).click(i, (event) =>
+        {
+            textListSeparatorSelectedRadio = event.data;
+
+            // textListCustomSeparatorInput[0].disabled = event.target.id !== "textListSeparatorCustomRadio";
+            textListCustomSeparatorInput[0].disabled = event.target !== textListSeparatorCustomRadio[0];
+
+            saveAllToLocalStorage();
+        });
+    });
+
+    textListCustomSeparatorInput.on("change", (event) =>
+    {
+        textListSeparatorCustomRadio.val(event.target.value);
+
+        saveAllToLocalStorage();
+    });
+
+    $("#copyAsTextListButton").on("click", copyAsTextListToClipboard);
 });
 
 function handleAddingItem(e)
@@ -324,7 +363,15 @@ function copyImageToClipboard()
             return blob;
         })
         .then(blob => new ClipboardItem({"image/png": blob}))
-        .then(clipboardItem => navigator.clipboard.write([clipboardItem]));
+        .then(clipboardItem => navigator.clipboard.write([clipboardItem]))
+        .catch(e =>
+        {
+            console.log("Unable to generate image and/or copy it to clipboard --", e);
+
+            $(createdBy).remove();
+
+            // I might want to eventually catch right after toBlob() and do the above, then catch here to have a fallback of showing the image on screen for the user to save (or prompt to download).
+        });
 
 }
 
@@ -346,6 +393,11 @@ function loadAllFromLocalStorage()
     itemsPerRowSlider.val(sItemsPerRow);
     itemsPerRowLabel.text(sItemsPerRow);
     itemsPerRow = sItemsPerRow;
+
+    textListSeparatorSelectedRadio = localStorage.getItem("textListSeparatorSelectedRadio") ?? 0;
+    const sTextListCustomSeparator = localStorage.getItem("textListCustomSeparator") ?? "";
+    textListSeparatorCustomRadio.val(sTextListCustomSeparator);
+    textListCustomSeparatorInput.val(sTextListCustomSeparator);
 }
 
 function saveAllToLocalStorage()
@@ -355,6 +407,8 @@ function saveAllToLocalStorage()
     localStorage.setItem("abbreviationMapping", JSON.stringify([...abbreviationMapping]));
     localStorage.setItem("bottomText", bottomText.text());
     localStorage.setItem("itemsPerRow", itemsPerRowSlider.val());
+    localStorage.setItem("textListSeparatorSelectedRadio", textListSeparatorSelectedRadio);
+    localStorage.setItem("textListCustomSeparator", textListCustomSeparatorInput.val());
 }
 
 
@@ -447,5 +501,18 @@ function ensureExtraAbbreviationMappingTableRow()
 
     if(!abbreviation.length || abbreviation.val().length)
         addAbbreviationMappingTableRow("", "");
+}
+
+
+function copyAsTextListToClipboard()
+{
+    const itemStrs = [];
+
+    const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
+    for(let item of items.values())
+        itemStrs.push(`${item.quantity} ${item.name.replaceAll('_', ' ')} (${item.priceOrMultiplier})`);
+
+    const textList = itemStrs.join(textListSeparatorRadios[textListSeparatorSelectedRadio].value);
+    navigator.clipboard.writeText(textList);
 }
 
