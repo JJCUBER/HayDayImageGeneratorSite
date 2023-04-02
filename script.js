@@ -221,7 +221,9 @@ function getImageUrl(itemNameTitleSnakeCase, imageWidth = 100)
             // console.log(data);
             const pages = data.query.pages;
             const pageId = Object.keys(pages)[0];
-            return pages[pageId].imageinfo[0].thumburl;
+            // for some reason, this works fine but the resultant wikia static image url yields a 404 from github pages ONLY when scaled down
+            // return pages[pageId].imageinfo[0].thumburl;
+            return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
         });
 
 }
