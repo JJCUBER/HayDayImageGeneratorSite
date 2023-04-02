@@ -300,7 +300,9 @@ function updateItemLayout()
 
 function formatItemPriceLabel(priceOrMultiplier)
 {
-    return priceOrMultiplier + (String(priceOrMultiplier).endsWith('x') ? "" : `<img id="coin" src="${coinImageUrl}">`);
+    // return priceOrMultiplier + (String(priceOrMultiplier).endsWith('x') ? "" : `<img id="coin" src="${coinImageUrl}">`);
+    // have to manually specify width and height due to weird github pages issue
+    return priceOrMultiplier + (String(priceOrMultiplier).endsWith('x') ? "" : `<img id="coin" src="${coinImageUrl}" style="width: 28px; height: 28px;">`);
 }
 
 
