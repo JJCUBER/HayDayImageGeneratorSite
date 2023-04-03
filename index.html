@@ -29,7 +29,10 @@
         <div style="height: 20px;"></div>
         <hr>
 
-        <h2>Add/Modify Item</h2>
+        <h2>
+            Add/Modify Item
+            <small><small>(Press enter inside any textbox to submit pending item changes)</small></small>
+        </h2>
 
         <label for="itemNameInput">Name</label>
         <input type="text" id="itemNameInput">
@@ -40,12 +43,13 @@
         <label for="itemPriceOrMultiplierInput">Price/Multiplier</label>
         <input type="text" id="itemPriceOrMultiplierInput" value="5x">
 
+        <br>
+        <div style="height: 10px;"></div>
+
         <button id="copyImageToClipboardButton">Copy Image to Clipboard</button>
         <button id="copyAsTextListButton">Copy as Text List</button>
 
-        <i>(Press enter inside any textbox to submit pending item changes)</i>
-
-        <div style="height: 20px;"></div>
+        <div style="height: 15px;"></div>
         <hr>
         <div style="height: 20px;"></div>
 
@@ -61,7 +65,10 @@
                 <button id="hideSettingsButton">X</button>
                 <div id="settingsInner">
                     <div style="height: 10px;"></div>
-                    <h2>Item Abbreviations (case-insensitive)</h2>
+                    <h2>
+                        Item Abbreviations
+                        <small><small>(case-insensitive)</small></small>
+                    </h2>
                     <div id="abbreviationMappingTableArea">
                         <table id="abbreviationMappingTable">
                             <tr>

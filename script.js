@@ -242,7 +242,8 @@ function handleAbbreviations(itemName)
 }
 
 const specialNameMapping = new Map([
-    ["Tnt_Barrel", "TNT_Barrel"]
+    ["Tnt_Barrel", "TNT_Barrel"],
+    ["Blt_Salad", "BLT_Salad"]
 ]);
 function handleSpecialNames(itemName)
 {
@@ -509,7 +510,7 @@ function copyAsTextListToClipboard()
     const itemStrs = [];
 
     const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
-    for(let item of items.values())
+    for(let item of itemsSortedDescending)
         itemStrs.push(`${item.quantity} ${item.name.replaceAll('_', ' ')} (${item.priceOrMultiplier})`);
 
     const textList = itemStrs.join(textListSeparatorRadios[textListSeparatorSelectedRadio].value);

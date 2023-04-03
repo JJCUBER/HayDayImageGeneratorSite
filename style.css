@@ -1,11 +1,8 @@
 body
 {
     background-color: #fff8b8;
-}
 
-h2
-{
-    text-decoration: underline;
+    font-family: Arial;
 }
 
 
@@ -13,7 +10,6 @@ h2
 {
     text-align: center;
 
-    font-family: Arial;
     font-size: 50px;
     font-weight: bold;
 
@@ -41,7 +37,6 @@ h2
     top: 5px;
     right: 5px;
 
-    font-family: Arial;
     font-size: 50px;
     font-weight: bold;
     color: white;
@@ -56,7 +51,6 @@ h2
     top: 2px;
     left: 2px;
 
-    font-family: Arial;
     font-size: 30px;
     font-weight: bold;
     color: yellow;
@@ -74,14 +68,14 @@ h2
     --stroke-neg: -1px;
     --stroke-color: #0004;
     filter:
-        drop-shadow(var(--stroke-pos) 0 0 var(--stroke-color)) 
+        drop-shadow(var(--stroke-pos) 0 0 var(--stroke-color))
         drop-shadow(var(--stroke-neg) 0 var(--stroke-color))
         drop-shadow(0 var(--stroke-pos) 0 var(--stroke-color))
         drop-shadow(0 var(--stroke-neg) 0 var(--stroke-color))
-        drop-shadow(var(--stroke-pos) var(--stroke-pos) 0 var(--stroke-color)) 
+        drop-shadow(var(--stroke-pos) var(--stroke-pos) 0 var(--stroke-color))
         drop-shadow(var(--stroke-pos) var(--stroke-neg) 0 var(--stroke-color))
         drop-shadow(var(--stroke-neg) var(--stroke-pos) 0 var(--stroke-color))
-        drop-shadow(var(--stroke-neg) var(--stroke-neg) 0 var(--stroke-color));   
+        drop-shadow(var(--stroke-neg) var(--stroke-neg) 0 var(--stroke-color));
 }
 
 td
