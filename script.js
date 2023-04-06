@@ -81,6 +81,11 @@ $(document).ready(() =>
 
         saveAllToLocalStorage();
     });
+    bottomText.on("click", () =>
+    {
+        settingsButton.click();
+        bottomTextSettingInput.select();
+    });
 
 
     // (only fires once the slider is released)
@@ -114,6 +119,17 @@ $(document).ready(() =>
     });
 
     $("#copyAsTextListButton").on("click", copyAsTextListToClipboard);
+
+    $("#clearAllButton").on("click", () =>
+    {
+        if(confirm("Are you sure?  This will clear the items currently added and can't be undone."))
+        {
+            items.clear();
+            updateItemLayout();
+
+            saveAllToLocalStorage();
+        }
+    });
 });
 
 function handleAddingItem(e)
@@ -305,7 +321,7 @@ function updateItemLayout()
             imageLoadPromises.push(new Promise(resolve => $(image).on("load", resolve)));
             $(image).on("click", () =>
             {
-                itemNameInput[0].select();
+                itemNameInput.select();
             });
 
             const quantityLabel = document.createElement("p");
@@ -313,7 +329,7 @@ function updateItemLayout()
             quantityLabel.className = "quantityLabel";
             $(quantityLabel).on("click", () =>
             {
-                itemQuantityInput[0].select();
+                itemQuantityInput.select();
             });
 
             const priceLabel = document.createElement("p");
@@ -321,7 +337,7 @@ function updateItemLayout()
             priceLabel.className = "priceLabel";
             $(priceLabel).on("click", () =>
             {
-                itemPriceOrMultiplierInput[0].select();
+                itemPriceOrMultiplierInput.select();
             });
 
             tableCell.appendChild(image);
@@ -355,6 +371,7 @@ function copyImageToClipboard()
     createdBy.style.fontSize = "10px";
     createdBy.style.margin = "10px";
     createdBy.style.marginTop = "2px";
+    createdBy.style.fontWeight = "900";
     screenshotRegion.append(createdBy);
 
     htmlToImage.toBlob(screenshotRegion[0])

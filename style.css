@@ -17,6 +17,11 @@ body
     margin-bottom: 0px; /* this makes the screenshotRegion div wrap more tightly around this */
 }
 
+#bottomText:hover
+{
+    cursor: pointer;
+}
+
 .itemCell
 {
     position: relative;
