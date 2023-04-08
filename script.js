@@ -257,9 +257,13 @@ function handleAbbreviations(itemName)
     return abbreviationMapping.get(itemName.toLowerCase()) ?? itemName;
 }
 
+// Items with "abnormal" casing are abbreviations and items with the word "and" in them (I could just replace all and's with And, but that might not be very future-proof or have a weird edge-case)
 const specialNameMapping = new Map([
     ["Tnt_Barrel", "TNT_Barrel"],
-    ["Blt_Salad", "BLT_Salad"]
+    ["Blt_Salad", "BLT_Salad"],
+    ["Bacon_And_Eggs", "Bacon_and_Eggs"],
+    ["Fish_And_Chips", "Fish_and_Chips"],
+    ["Peanut_Butter_And_Jelly_Sandwich", "Peanut_Butter_and_Jelly_Sandwich"]
 ]);
 function handleSpecialNames(itemName)
 {
