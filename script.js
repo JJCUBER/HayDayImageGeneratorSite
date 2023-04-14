@@ -263,7 +263,8 @@ const specialNameMapping = new Map([
     ["Blt_Salad", "BLT_Salad"],
     ["Bacon_And_Eggs", "Bacon_and_Eggs"],
     ["Fish_And_Chips", "Fish_and_Chips"],
-    ["Peanut_Butter_And_Jelly_Sandwich", "Peanut_Butter_and_Jelly_Sandwich"]
+    ["Peanut_Butter_And_Jelly_Sandwich", "Peanut_Butter_and_Jelly_Sandwich"],
+    ["Frutti_Di_Mare_Pizza", "Frutti_di_Mare_Pizza"]
 ]);
 function handleSpecialNames(itemName)
 {
