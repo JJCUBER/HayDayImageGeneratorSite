@@ -13,9 +13,9 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.js" integrity="sha512-zPMZ/3MBK+R1rv6KcBFcf7rGwLnKS+xtB2OnWkAxgC6anqxlDhl/wMWtDbiYI4rgi/NrCJdXrmNGB8pIq+slJQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=1.5.2">
+        <link rel="stylesheet" href="style.css?v=2.0">
 
-        <script src="script.js?v=1.5.2"></script>
+        <script src="script.js?v=2.0"></script>
     </head>
     <body>
         <h2>Options</h2>
@@ -25,6 +25,7 @@
         <label id="itemsPerRowLabel">8</label>
 
         <button id="settingsButton" style="margin-left: 20px;">Settings</button>
+        <button id="changelogButton">Changelog</button>
 
         <div style="height: 20px;"></div>
         <hr>
@@ -46,13 +47,33 @@
         <br>
         <div style="height: 10px;"></div>
 
-        <button id="clearAllButton">Clear All</button>
+        <button id="clearAllButton" class="disableInPriceCalculationMode">Clear All</button>
         <button id="copyImageToClipboardButton">Copy Image to Clipboard</button>
         <button id="copyAsTextListButton">Copy as Text List</button>
+        <br>
+        <div style="height: 10px;"></div>
+        <button id="priceCalculationToggleButton"><span id="priceCalculationModeStateSpan">Enable</span> Price Calculation Mode</button>
+        <button id="selectAllButton" class="disableOutsidePriceCalculationMode">Select All</button>
+        <button id="clearSelectionButton" class="disableOutsidePriceCalculationMode">Clear Selection</button>
+        <button id="subtractSelectedQuantitiesButton" class="disableOutsidePriceCalculationMode">Subtract Selected Quantities</button>
+        <button id="deleteSelectedButton" class="disableOutsidePriceCalculationMode">Delete Selected</button>
+        <br>
+        <div style="height: 10px;"></div>
+        <button id="resetCustomValuesButton" class="disableOutsidePriceCalculationMode">Reset Custom Values</button>
+        <button id="equationVisibilityToggleButton" class="disableOutsidePriceCalculationMode"><span id="equationVisibilityStateSpan">Show</span> Equation</button>
 
         <div style="height: 15px;"></div>
         <hr>
+        <div id="totalPriceArea" hidden>
+            <h2>Total Selected Price</h2>
+            <p id="totalPriceHolder"></p>
+            <p id="totalPriceMessageHolder" hidden></p>
+            <p id="totalPriceEquationHolder" hidden></p>
+            <hr>
+        </div>
         <small>You can click on any item's image, quantity, or price to autofill all their information and focus the corresponding text box!  (This includes the bottom text.)</small>
+        <br>
+        <small id="priceCalculationModeSelectionInfo" hidden>Click = individual toggle, Shift+Click = range additive, Alt+Click = range subtractive, Ctrl+Click = range toggle (invert)</small>
         <div style="height: 20px;"></div>
 
         <div id="screenshotRegion">
@@ -61,7 +82,7 @@
             <p id="bottomText"></p>
         </div>
 
-        <div id="settingsOverlay">
+        <div id="settingsOverlay" hidden>
             <div id="settingsBackground"></div>
             <div id="settingsBox">
                 <button id="hideSettingsButton">X</button>
@@ -69,6 +90,7 @@
                     <div style="height: 10px;"></div>
                     <h2>
                         Item Abbreviations
+                        <br>
                         <small><small>(case-insensitive)</small></small>
                     </h2>
                     <div id="abbreviationMappingTableArea">
@@ -83,7 +105,7 @@
                     <hr>
 
                     <h2>Bottom Text</h2>
-                    <input type="text" id="bottomTextSettingInput">
+                    <textarea id="bottomTextSettingInput" rows="3" cols="45"></textarea>
 
                     <hr>
 
@@ -96,7 +118,29 @@
                     <label for="textListSeparatorCustomRadio">Custom</label>
 
                     <input type="text" id="textListCustomSeparatorInput" style="width: 40px;" value="">
+
+                    <hr>
+
+                    <h2>
+                        Text List Format
+                        <br>
+                        <small><small>variables: {{name}}, {{quantity}}, {{price}}</small></small>
+                    </h2>
+                    <textarea id="textListFormatInput" rows="3" cols="45"></textarea>
+
+                    <hr>
+
+                    <h2>Item for Price Calculation</h2>
+                    <input type="text" id="priceCalculationItemInput">
                 </div>
+            </div>
+        </div>
+
+        <div id="changelogOverlay" hidden>
+            <div id="changelogBackground"></div>
+            <div id="changelogBox">
+                <button id="hideChangelogButton">X</button>
+                <div id="changelogInner"></div>
             </div>
         </div>
     </body>

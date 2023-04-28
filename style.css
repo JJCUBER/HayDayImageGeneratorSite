@@ -5,6 +5,17 @@ body
     font-family: Arial;
 }
 
+button:hover:enabled
+{
+    cursor: pointer;
+}
+
+/* puts margin between consecutive buttons: https://developer.mozilla.org/en-US/docs/Web/CSS/Adjacent_sibling_combinator */
+button + button
+{
+    margin-left: 10px;
+}
+
 
 #bottomText
 {
@@ -48,6 +59,22 @@ body
 
     -webkit-text-stroke: 2px black;
 }
+.quantityLabel:hover, .customQuantityLabel:hover
+{
+    -webkit-text-stroke: 2px orange;
+}
+.customQuantityLabel
+{
+    position: absolute;
+    top: 53px;
+    left: 5px;
+
+    font-size: 25px;
+    font-weight: bold;
+    color: white;
+
+    -webkit-text-stroke: 2px red;
+}
 
 .priceLabel
 {
@@ -60,27 +87,50 @@ body
     font-weight: bold;
     color: yellow;
     -webkit-text-stroke: 2px black;
+    --coin-stroke-color: #0004;
+}
+.priceLabel:hover, .customPriceLabel:hover
+{
+    -webkit-text-stroke: 2px orange;
+    --coin-stroke-color: #ffa50044;
+}
+.customPriceLabel
+{
+    position: absolute;
+    -webkit-transform: translate(0%,-100%);
+    top: 2px;
+    right: 2px;
+
+    font-size: 25px;
+    font-weight: bold;
+    color: yellow;
+    -webkit-text-stroke: 2px red;
+    --coin-stroke-color: #0004;
 }
 
-#coin
+.coin
 {
     position: relative;
     top: 2px;
+
+    /* have to manually specify width and height due to weird github pages issue */
+    width: 28px;
+    height: 28px;
 
     /* nice outline */
     /* based on https://stackoverflow.com/questions/12690444/css-border-on-png-image-with-transparent-parts */
     --stroke-pos: 1px;
     --stroke-neg: -1px;
-    --stroke-color: #0004;
+    /* --coin-stroke-color is set in priceLabel-related classes to handle hovering changing the outline */
     filter:
-        drop-shadow(var(--stroke-pos) 0 0 var(--stroke-color))
-        drop-shadow(var(--stroke-neg) 0 var(--stroke-color))
-        drop-shadow(0 var(--stroke-pos) 0 var(--stroke-color))
-        drop-shadow(0 var(--stroke-neg) 0 var(--stroke-color))
-        drop-shadow(var(--stroke-pos) var(--stroke-pos) 0 var(--stroke-color))
-        drop-shadow(var(--stroke-pos) var(--stroke-neg) 0 var(--stroke-color))
-        drop-shadow(var(--stroke-neg) var(--stroke-pos) 0 var(--stroke-color))
-        drop-shadow(var(--stroke-neg) var(--stroke-neg) 0 var(--stroke-color));
+        drop-shadow(var(--stroke-pos) 0 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-neg) 0 var(--coin-stroke-color))
+        drop-shadow(0 var(--stroke-pos) 0 var(--coin-stroke-color))
+        drop-shadow(0 var(--stroke-neg) 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-pos) var(--stroke-pos) 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-pos) var(--stroke-neg) 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-neg) var(--stroke-pos) 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-neg) var(--stroke-neg) 0 var(--coin-stroke-color));
 }
 
 td
@@ -106,25 +156,23 @@ td:hover
 
 #settingsOverlay
 {
-    display: none;
-
     text-align: center;
 }
 
-#settingsBackground
+#settingsBackground, #changelogBackground
 {
-    position: absolute;
+    position: fixed;
     top: 0%;
     left: 0%;
     width: 100%;
     height: 100%;
 
-    background-color: #000A;
+    background-color: #000a;
 }
 
-#settingsBox
+#settingsBox, #changelogBox
 {
-    position: absolute;
+    position: fixed;
     top:50%;
     left:50%;
     transform: translate(-50.00005%, -50%); /* the ever-so-slight offset is done since the left side of the outline of the textboxes gets weird (maybe that's only for my computer at 100%, I don't know.) */
@@ -139,12 +187,12 @@ td:hover
     border-radius: 5px;
 }
 
-#settingsInner
+#settingsInner, #changelogInner
 {
     margin: 10px;
 }
 
-#hideSettingsButton
+#hideSettingsButton, #hideChangelogButton
 {
     position: absolute;
     top: 10px;
@@ -160,9 +208,16 @@ td:hover
 }
 
 
-#copyImageToClipboardButton
+.selected, .invalid
 {
-    margin-left: 10px;
-    margin-right: 10px;
+    border-style: solid;
+    border-color: red;
+    outline: none; /* prevents black outline of focused input, along with when shift is pressed when a button is "focused" */
+}
+
+#totalPriceMessageHolder
+{
+    font-weight: bold;
+    /*-webkit-text-stroke: 0.5px #000a;*/
 }
 
