@@ -7,15 +7,17 @@
         <!-- Using the unminified version since it might help me debug any issues; might want to eventually use https://code.jquery.com/jquery-3.6.4.min.js -->
         <!-- Got the integrity sha/hash using https://www.srihash.org/ (found out about it here: https://stackoverflow.com/questions/51254596/how-to-get-the-integrity-value-for-a-jquery-version-for-script ); I decided to stick with the sha384 it defaults to.  I'm unsure whether to append the attribute: referrerpolicy="no-referrer" -->
         <script src="https://code.jquery.com/jquery-3.6.4.js" integrity="sha384-SCPawFAkxFucxzK6X4Gpg3lmBZqjjmM8ghZCRH8hW4C+k4wCVXFd862J1juShkQ7" crossorigin="anonymous"></script>
+        <!-- Useful for finding which deprecated functions I'm using ( https://github.com/jquery/jquery-migrate/ )-->
+        <!-- <script src="https://code.jquery.com/jquery-migrate-3.1.0.js"></script> -->
 
         <!-- Using the unminified version of math js; this is mainly for processing equations in the quantity input field, since I want to avoid using eval() [it also processes code, not just equations].  More info here: https://mathjs.org/download.html and https://cdnjs.com/libraries/mathjs -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.js" integrity="sha512-jVMFsAksn8aljb9IJ+3OCAq38dJpquMBjgEuz7Q5Oqu5xenfin/jxdbKw4P5eKjUF4xiG/GPT5CvCX3Io54gyA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.js" integrity="sha512-zPMZ/3MBK+R1rv6KcBFcf7rGwLnKS+xtB2OnWkAxgC6anqxlDhl/wMWtDbiYI4rgi/NrCJdXrmNGB8pIq+slJQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=2.0">
+        <link rel="stylesheet" href="style.css?v=2.1">
 
-        <script src="script.js?v=2.0"></script>
+        <script src="script.js?v=2.1"></script>
     </head>
     <body>
         <h2>Options</h2>

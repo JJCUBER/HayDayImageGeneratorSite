@@ -85,8 +85,7 @@ button + button
 
     font-size: 30px;
     font-weight: bold;
-    color: yellow;
-    -webkit-text-stroke: 2px black;
+    color: black;
     --coin-stroke-color: #0004;
 }
 .priceLabel:hover, .customPriceLabel:hover
@@ -144,6 +143,11 @@ td:hover
     border-color: #ffd600;
 
     cursor: pointer;
+}
+
+td.selected:hover
+{
+    border-color: purple; /* orange or pink might also work well */
 }
 
 

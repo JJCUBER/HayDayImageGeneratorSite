@@ -11,7 +11,7 @@ let totalPriceArea, totalPriceHolder, totalPriceMessageHolder, totalPriceEquatio
 let coinImageUrl;
 let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
-let changelogButton, changelogOverlay, changelogInner;
+let changelogButton, changelogOverlay, changelogInner, hideChangelogButton;
 
 $(document).ready(() =>
 {
@@ -53,6 +53,7 @@ $(document).ready(() =>
     changelogButton = $("#changelogButton");
     changelogOverlay = $("#changelogOverlay");
     changelogInner = $("#changelogInner");
+    hideChangelogButton = $("#hideChangelogButton");
 
 
     itemsPerRowSlider.on("input",
@@ -87,6 +88,10 @@ $(document).ready(() =>
     {
         settingsOverlay.prop("hidden", true);
         $("body").css("overflow", "visible");
+    });
+    $("#settingsBackground").on("click", () =>
+    {
+        hideSettingsButton.trigger("click");
     });
 
 
@@ -127,7 +132,7 @@ $(document).ready(() =>
         updateBottomTextWidth();
     });
     // on change for when focus is lost to the input area, which "commits" the changes to local storage as well
-    bottomTextSettingInput.change(event =>
+    bottomTextSettingInput.on("change", event =>
     {
         bottomText[0].innerText = event.target.value;
         updateBottomTextWidth();
@@ -136,8 +141,8 @@ $(document).ready(() =>
     });
     bottomText.on("click", () =>
     {
-        settingsButton.click();
-        bottomTextSettingInput.select();
+        settingsButton.trigger("click");
+        bottomTextSettingInput.trigger("select");
     });
 
 
@@ -154,7 +159,7 @@ $(document).ready(() =>
 
     textListSeparatorRadios.each((i, elem) =>
     {
-        $(elem).click(i, (event) =>
+        $(elem).on("click", i, (event) =>
         {
             textListSeparatorSelectedRadio = event.data;
 
@@ -172,12 +177,12 @@ $(document).ready(() =>
         saveAllToLocalStorage();
     });
 
-    textListFormatInput.change(() =>
+    textListFormatInput.on("change", () =>
     {
         saveAllToLocalStorage();
     });
 
-    priceCalculationItemInput.change(async (event) =>
+    priceCalculationItemInput.on("change", async (event) =>
     {
         let itemNameFormatted = formatItemName(event.target.value);
         let itemUrl, itemMaxPrice;
@@ -201,7 +206,7 @@ $(document).ready(() =>
         saveAllToLocalStorage();
     });
     // want to make it fire immediately the first time; I couldn't do this inside the load all function since this must be set after the load all and after the coin image url is fetched
-    priceCalculationItemInput.change();
+    priceCalculationItemInput.trigger("change");
 
     $("#copyAsTextListButton").on("click", copyAsTextListToClipboard);
 
@@ -254,7 +259,7 @@ $(document).ready(() =>
         updateItemLayout();
     });
 
-    $("#selectAllButton").click(() =>
+    $("#selectAllButton").on("click", () =>
     {
         const cells = $("#itemTable td");
         setSelectedStateAll(items.values(), cells, true);
@@ -262,7 +267,7 @@ $(document).ready(() =>
         updateTotalPrice();
     });
 
-    $("#clearSelectionButton").click(() =>
+    $("#clearSelectionButton").on("click", () =>
     {
         const cells = $("#itemTable td");
         setSelectedStateAll(items.values(), cells, false);
@@ -270,7 +275,7 @@ $(document).ready(() =>
         updateTotalPrice();
     });
 
-    $("#subtractSelectedQuantitiesButton").click(() =>
+    $("#subtractSelectedQuantitiesButton").on("click", () =>
     {
         for(let item of items.values())
         {
@@ -294,7 +299,7 @@ $(document).ready(() =>
         saveAllToLocalStorage();
     });
 
-    $("#deleteSelectedButton").click(() =>
+    $("#deleteSelectedButton").on("click", () =>
     {
         for(let item of items.values())
         {
@@ -307,7 +312,7 @@ $(document).ready(() =>
         saveAllToLocalStorage();
     });
 
-    $("#resetCustomValuesButton").click(() =>
+    $("#resetCustomValuesButton").on("click", () =>
     {
         for(let item of items.values())
         {
@@ -318,7 +323,7 @@ $(document).ready(() =>
         updateItemLayout();
     });
 
-    $("#equationVisibilityToggleButton").click(() =>
+    $("#equationVisibilityToggleButton").on("click", () =>
     {
         // TODO - might want to use something like this for the price calculation toggle, since it can be tied to the total price div area
         const wasHidden = totalPriceEquationHolder.is("[hidden]");
@@ -338,11 +343,14 @@ $(document).ready(() =>
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         $("body").css("overflow", "hidden");
     });
-
-    $("#hideChangelogButton").on("click", () =>
+    hideChangelogButton.on("click", () =>
     {
         changelogOverlay.prop("hidden", true);
         $("body").css("overflow", "visible");
+    });
+    $("#changelogBackground").on("click", () =>
+    {
+        hideChangelogButton.trigger("click");
     });
 
     handleVersionChange();
@@ -660,7 +668,7 @@ function updateItemLayout()
                 tableCell.classList.add("selected");
 
             // must be mouseup to execute before the on click events for image, quantity, and label (since they must select the text after it has been overridden by this)
-            $(tableCell).mouseup({index: i, item: currItem}, (event) =>
+            $(tableCell).on("mouseup", {index: i, item: currItem}, (event) =>
             {
                 const item = event.data.item;
                 itemNameInput.val(item.getHumanReadableName());
@@ -717,7 +725,7 @@ function updateItemLayout()
             imageLoadPromises.push(new Promise(resolve => $(image).on("load", resolve)));
             $(image).on("click", () =>
             {
-                itemNameInput.select();
+                itemNameInput.trigger("select");
             });
 
             const quantityLabel = document.createElement("p");
@@ -725,7 +733,7 @@ function updateItemLayout()
             quantityLabel.className = "quantityLabel";
             $(quantityLabel).on("click", () =>
             {
-                itemQuantityInput.select();
+                itemQuantityInput.trigger("select");
             });
 
             const priceLabel = document.createElement("p");
@@ -733,7 +741,7 @@ function updateItemLayout()
             priceLabel.className = "priceLabel";
             $(priceLabel).on("click", () =>
             {
-                itemPriceOrMultiplierInput.select();
+                itemPriceOrMultiplierInput.trigger("select");
             });
 
             let customQuantityLabel, customPriceLabel;
@@ -747,7 +755,7 @@ function updateItemLayout()
                     customQuantityLabel.hidden =  !currItem.isSelected;
                     $(customQuantityLabel).on("click", () =>
                     {
-                        itemQuantityInput.select();
+                        itemQuantityInput.trigger("select");
                     });
                 }
 
@@ -759,7 +767,7 @@ function updateItemLayout()
                     customPriceLabel.hidden =  !currItem.isSelected;
                     $(customPriceLabel).on("click", () =>
                     {
-                        itemPriceOrMultiplierInput.select();
+                        itemPriceOrMultiplierInput.trigger("select");
                     });
                 }
             }
@@ -900,11 +908,11 @@ function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded)
     const abbreviationExpandedCell = document.createElement("td");
 
     const abbreviationInput = document.createElement("input");
-    $(abbreviationInput).change(handleAbbreviationChange);
+    $(abbreviationInput).on("change", handleAbbreviationChange);
     abbreviationInput.value = abbreviation;
     abbreviationInput.dataset.previousValue = abbreviation;
     const abbreviationExpandedInput = document.createElement("input");
-    $(abbreviationExpandedInput).change(handleAbbreviationChange);
+    $(abbreviationExpandedInput).on("change", handleAbbreviationChange);
     abbreviationExpandedInput.value = abbreviationExpanded;
     // abbreviationExpandedInput.dataset.previousValue = abbreviationExpanded;
 
@@ -1193,6 +1201,15 @@ function setSelectedStateAll(items, cells, isSelected)
 }
 
 const changelog = new Map([
+    ["v2.1", `Features:
+- Popups now close when you click "out of them" (when you click the semi-transparent background); this makes it easier to exit without scrolling back up to the x button (also working on getting that x button to stay put at some point)
+
+UI Changes:
+- Changed color of outline when hovering over selected items (to make it easier to tell when you are hovering over something that is also selected)
+- Made price/multiplier labels be pure black with no outline (more readable)
+
+Misc.:
+- Removed use of some deprecated jQuery functions`],
     ["v2.0", `MAJOR (Overview):
 - A Price Calculation Mode was added, which supports a ton of stuff (multiple ways to quickly select/deselect individual/ranges of items, custom quantities and prices/multipliers for selection mode, automatic price calculation of selected items, a way to see the equation used for the calculation, and more)
 - improved UI (in the way of making it clear what is clickable, what is happening, etc.)
@@ -1333,6 +1350,6 @@ function handleVersionChange()
     latestVersionHeader.innerText += " -- NEW!";
     latestVersionHeader.style.color = "red";
 
-    changelogButton.click();
+    changelogButton.trigger("click");
 }
 
