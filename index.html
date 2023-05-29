@@ -15,9 +15,12 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.js" integrity="sha512-zPMZ/3MBK+R1rv6KcBFcf7rGwLnKS+xtB2OnWkAxgC6anqxlDhl/wMWtDbiYI4rgi/NrCJdXrmNGB8pIq+slJQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=2.1">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js" integrity="sha512-sdAWRZSPnL/EbXixTyBhffFggsxlPrxEMLKvseTBMfY3MGxYvXvm83S/WddNpx1tXPylK5warEPp7uu1yiNsgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <script src="script.js?v=2.1"></script>
+        <link rel="stylesheet" href="style.css?v=2.2">
+
+
+        <script src="script.js?v=2.2"></script>
     </head>
     <body>
         <h2>Options</h2>
@@ -37,8 +40,13 @@
             <small><small>(Press enter inside any textbox to submit pending item changes)</small></small>
         </h2>
 
+        <!-- Label MUST be outside of the div for the dimensions of the autocomplete/fuzzy match options to be proper -->
         <label for="itemNameInput">Name</label>
-        <input type="text" id="itemNameInput">
+        <!-- this div needs to have position be relative in order for 100% width of the inner div to not cover the whole document ( https://stackoverflow.com/questions/6625116/css-position-absolute-and-full-width-problem ) -->
+        <div style="display: inline-block; position: relative;">
+            <input type="text" id="itemNameInput">
+            <div id="fuzzyMatchesHolder"></div>
+        </div>
 
         <label for="itemQuantityInput">Quantity</label>
         <input type="text" id="itemQuantityInput" value=1>

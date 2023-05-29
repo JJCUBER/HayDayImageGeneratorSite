@@ -1,3 +1,21 @@
+
+/* -------- scripts/Utility.js -------- */
+function convertToTitleSnakeCase(phrase)
+{
+    if(!phrase.length)
+        return phrase;
+
+    phrase = phrase.replaceAll("_", " ");
+    let words = phrase.split(" ");
+    let titleCaseWords = [];
+    for(let word of words)
+        titleCaseWords.push(word[0].toUpperCase() + word.slice(1).toLowerCase());
+
+    return titleCaseWords.join("_");
+}
+
+
+/* -------- scripts/Globals.js -------- */
 let itemsPerRow = 8;
 let textListSeparatorSelectedRadio = 0; // , textListCustomSeparator = "";
 
@@ -13,6 +31,34 @@ let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
 let changelogButton, changelogOverlay, changelogInner, hideChangelogButton;
 
+let fuzzyMatchesHolder;
+
+
+let preparedItemNames;
+
+
+let items = new Map();
+
+let abbreviationMapping = new Map([
+    ["tnt", "tnt barrel"],
+    ["dyn", "dynamite"],
+    ["wsugar", "white sugar"],
+    ["bsugar", "brown sugar"],
+    ["bpop", "buttered popcorn"],
+    ["cpop", "cherry popsicle"],
+    ["bmuff", "blackberry muffin"],
+    ["rmuff", "raspberry muffin"],
+    ["vice", "vanilla ice cream"],
+    ["sice", "strawberry ice cream"],
+    ["gbar", "gold bar"],
+    ["sbar", "silver bar"],
+    ["pbar", "platinum bar"],
+    ["rcoal", "refined coal"],
+    ["gcheese", "goat cheese"]
+]);
+
+
+/* -------- scripts/Init.js -------- */
 $(document).ready(() =>
 {
     itemsPerRowSlider = $("#itemsPerRowSlider");
@@ -55,6 +101,8 @@ $(document).ready(() =>
     changelogInner = $("#changelogInner");
     hideChangelogButton = $("#hideChangelogButton");
 
+    fuzzyMatchesHolder = $("#fuzzyMatchesHolder");
+
 
     itemsPerRowSlider.on("input",
         (event) =>
@@ -65,7 +113,35 @@ $(document).ready(() =>
         }
     );
 
-    itemNameInput.on("keyup", handleAddingItem);
+
+    itemNameInput.on("focus", updateFuzzyMatches);
+    // itemNameInput.on("blur", clearFuzzyMatches);
+    itemNameInput.on("blur", () =>
+    {
+        fuzzyMatchesHolder.empty();
+    });
+
+    itemNameInput.on("keydown", (e) =>
+    {
+        // should use key to get the value representation of the input, allowing numpad numbers to show up like normal numbers ( https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key and https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code )
+        if(e.key.length !== 1 || e.key < '0' || e.key > '9')
+            return;
+        let selection = e.key - '0';
+        if(selection === 0)
+            selection = 10;
+
+        const buttons = fuzzyMatchesHolder.find("button");
+        if(buttons.length < selection)
+            return;
+
+        buttons.eq(selection - 1).trigger("mousedown");
+        event.preventDefault();
+    });
+    itemNameInput.on("keyup", (e) =>
+    {
+        updateFuzzyMatches();
+        handleAddingItem(e);
+    });
     itemQuantityInput.on("keyup", handleAddingItem);
     itemPriceOrMultiplierInput.on("keyup", handleAddingItem);
 
@@ -129,13 +205,11 @@ $(document).ready(() =>
     bottomTextSettingInput.on("input", event =>
     {
         bottomText[0].innerText = event.target.value;
-        updateBottomTextWidth();
     });
     // on change for when focus is lost to the input area, which "commits" the changes to local storage as well
     bottomTextSettingInput.on("change", event =>
     {
         bottomText[0].innerText = event.target.value;
-        updateBottomTextWidth();
 
         saveAllToLocalStorage();
     });
@@ -354,8 +428,16 @@ $(document).ready(() =>
     });
 
     handleVersionChange();
+
+
+    prepareAllItemNames().then(prepared =>
+    {
+        preparedItemNames = prepared;
+    });
 });
 
+
+/* -------- scripts/Item.js -------- */
 // There are more operators than the ones here technically supported by math.js, but I feel like these are all the "reasonable" ones to support for the automatic prepending of the old quantity/custom quantity ( https://mathjs.org/docs/expressions/syntax.html )
 const operators = ['+', '-', '*', '/', '^', '%', "mod", '&', '|', "<<", ">>>", ">>"]; // >>> should be before >> to ensure the full operator gets removed then readded later (if >> was first, ">>> 5" would only remove the first 2 '>' leaving "> 5")
 function handleAddingItem(e)
@@ -364,6 +446,8 @@ function handleAddingItem(e)
     if(itemNameInput.hasClass("invalid"))
         itemNameInput.removeClass("invalid");
 
+
+    // TODO -- might want to be using e.key instead
     if(e.code !== "Enter")
         return;
 
@@ -484,7 +568,6 @@ class Item
 }
 
 
-let items = new Map();
 function addItem(itemNameFormatted, itemQuantity, itemPriceOrMultiplier, prependedQuantityOperator = "")
 {
     const isInPriceCalculationMode = getIsInPriceCalculationMode();
@@ -569,37 +652,6 @@ function formatItemName(itemName)
     return itemNameFormatted;
 }
 
-function convertToTitleSnakeCase(phrase)
-{
-    if(!phrase.length)
-        return phrase;
-
-    phrase = phrase.replaceAll("_", " ");
-    let words = phrase.split(" ");
-    let titleCaseWords = [];
-    for(let word of words)
-        titleCaseWords.push(word[0].toUpperCase() + word.slice(1).toLowerCase());
-
-    return titleCaseWords.join("_");
-}
-
-let abbreviationMapping = new Map([
-    ["tnt", "tnt barrel"],
-    ["dyn", "dynamite"],
-    ["wsugar", "white sugar"],
-    ["bsugar", "brown sugar"],
-    ["bpop", "buttered popcorn"],
-    ["cpop", "cherry popsicle"],
-    ["bmuff", "blackberry muffin"],
-    ["rmuff", "raspberry muffin"],
-    ["vice", "vanilla ice cream"],
-    ["sice", "strawberry ice cream"],
-    ["gbar", "gold bar"],
-    ["sbar", "silver bar"],
-    ["pbar", "platinum bar"],
-    ["rcoal", "refined coal"],
-    ["gcheese", "goat cheese"]
-]);
 function handleAbbreviations(itemName)
 {
     return abbreviationMapping.get(itemName.toLowerCase()) ?? itemName;
@@ -618,7 +670,6 @@ function handleSpecialNames(itemName)
 {
     return specialNameMapping.get(itemName) ?? itemName;
 }
-
 
 function getImageUrl(itemNameTitleSnakeCase, imageWidth = 100)
 {
@@ -654,7 +705,6 @@ function updateItemLayout()
     previousSelection = undefined;
 
     let i = 0;
-    let imageLoadPromises = [];
     while(rowCt--)
     {
         const tableRow = document.createElement("tr");
@@ -722,7 +772,6 @@ function updateItemLayout()
             const image = document.createElement("img");
             image.src = currItem.url;
             image.className = "itemImage";
-            imageLoadPromises.push(new Promise(resolve => $(image).on("load", resolve)));
             $(image).on("click", () =>
             {
                 itemNameInput.trigger("select");
@@ -788,9 +837,6 @@ function updateItemLayout()
 
     if(shouldShowSelection)
         updateTotalPrice();
-
-    // wait for all images to load, then update width of bottom text
-    Promise.all(imageLoadPromises).then(updateBottomTextWidth);
 }
 
 function formatItemPriceLabel(priceOrMultiplier)
@@ -835,155 +881,6 @@ function copyImageToClipboard()
 
 }
 
-
-function loadAllFromLocalStorage()
-{
-    const sItems = localStorage.getItem("items");
-    if(sItems)
-    {
-        // converts each "object" back into an object of type Item (not sure if I really need to do this)
-        let kvps = JSON.parse(sItems);
-        for(let i in kvps)
-            kvps[i][1] = Object.assign(new Item(), kvps[i][1]);
-        items = new Map(kvps);
-    }
-
-    const sAbbreviationMapping = localStorage.getItem("abbreviationMapping");
-    if(sAbbreviationMapping)
-        abbreviationMapping = new Map(JSON.parse(sAbbreviationMapping));
-
-    const sBottomText = localStorage.getItem("bottomText");
-    bottomText[0].innerText = sBottomText ?? "Partials Accepted"; // just like the abbreviations, I give a "reasonable" default
-
-    const sItemsPerRow = localStorage.getItem("itemsPerRow") ?? 8; // default 8
-    itemsPerRowSlider.val(sItemsPerRow);
-    itemsPerRowLabel.text(sItemsPerRow);
-    itemsPerRow = sItemsPerRow;
-
-    textListSeparatorSelectedRadio = localStorage.getItem("textListSeparatorSelectedRadio") ?? 0;
-    const sTextListCustomSeparator = localStorage.getItem("textListCustomSeparator") ?? "";
-    textListSeparatorCustomRadio.val(sTextListCustomSeparator);
-    textListCustomSeparatorInput.val(sTextListCustomSeparator);
-
-    const sTextListFormat = localStorage.getItem("textListFormat") ?? "{{quantity}} {{name}} ({{price}})"; // default format on right
-    textListFormatInput.val(sTextListFormat);
-
-    const sPriceCalculationItem = localStorage.getItem("priceCalculationItem") ?? "Diamond Ring"; // default to rings
-    priceCalculationItemInput.val(sPriceCalculationItem);
-}
-
-function saveAllToLocalStorage()
-{
-    // console.log("Saved");
-    saveItemsToLocalStorage();
-    localStorage.setItem("abbreviationMapping", JSON.stringify([...abbreviationMapping]));
-    localStorage.setItem("bottomText", bottomText[0].innerText); // must use innerText for newlines to be handled properly
-    // localStorage.setItem("bottomText", bottomTextSettingInput.val()); // can just use the setting input's value instead, though maybe I should keep it consistent with the loadAll, due to the way I load it into the bottom text then into the setting
-    localStorage.setItem("itemsPerRow", itemsPerRowSlider.val());
-    localStorage.setItem("textListSeparatorSelectedRadio", textListSeparatorSelectedRadio);
-    localStorage.setItem("textListCustomSeparator", textListCustomSeparatorInput.val());
-    localStorage.setItem("textListFormat", textListFormatInput.val());
-    localStorage.setItem("priceCalculationItem", priceCalculationItemInput.val());
-}
-
-function saveItemsToLocalStorage()
-{
-    localStorage.setItem("items", JSON.stringify([...items], (key, value) => Item.fieldsToOmitFromLocalStorage.includes(key) ? undefined : value));
-}
-
-
-function setUpAbbreviationMappingTable()
-{
-    for(let [abbreviation, abbreviationExpanded] of abbreviationMapping)
-        addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded);
-
-    ensureExtraAbbreviationMappingTableRow();
-}
-
-function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded)
-{
-    const abbreviationTableRow = document.createElement("tr");
-
-    const abbreviationCell = document.createElement("td");
-    const abbreviationExpandedCell = document.createElement("td");
-
-    const abbreviationInput = document.createElement("input");
-    $(abbreviationInput).on("change", handleAbbreviationChange);
-    abbreviationInput.value = abbreviation;
-    abbreviationInput.dataset.previousValue = abbreviation;
-    const abbreviationExpandedInput = document.createElement("input");
-    $(abbreviationExpandedInput).on("change", handleAbbreviationChange);
-    abbreviationExpandedInput.value = abbreviationExpanded;
-    // abbreviationExpandedInput.dataset.previousValue = abbreviationExpanded;
-
-
-    abbreviationCell.appendChild(abbreviationInput);
-    abbreviationExpandedCell.appendChild(abbreviationExpandedInput);
-
-    abbreviationTableRow.appendChild(abbreviationCell);
-    abbreviationTableRow.appendChild(abbreviationExpandedCell);
-
-    abbreviationMappingTable.append(abbreviationTableRow);
-}
-
-function handleAbbreviationChange(event)
-{
-    const previousValue = event.target.dataset.previousValue;
-
-    const row = $(event.target).closest("tr");
-    const cells = row.find("input");
-    const abbreviation = cells.eq(0);
-
-    if(!abbreviation.val().length)
-    {
-        removeAbbreviation(previousValue);
-        row.remove();
-
-        ensureExtraAbbreviationMappingTableRow();
-
-        return;
-    }
-    const abbreviationExpanded = cells.eq(1);
-
-    abbreviation.val(abbreviation.val().trim().toLowerCase());
-    abbreviationExpanded.val(abbreviationExpanded.val().trim().toLowerCase());
-
-    updateAbbreviation(previousValue, abbreviation.val(), abbreviationExpanded.val());
-
-    abbreviation[0].dataset.previousValue = abbreviation.val();
-
-    ensureExtraAbbreviationMappingTableRow();
-};
-
-
-function removeAbbreviation(abbreviation)
-{
-    abbreviationMapping.delete(abbreviation);
-
-    saveAllToLocalStorage();
-}
-
-function updateAbbreviation(oldAbbreviation, newAbbreviation, abbreviationExpanded)
-{
-    abbreviationMapping.set(newAbbreviation, abbreviationExpanded);
-
-    if(oldAbbreviation !== newAbbreviation)
-        removeAbbreviation(oldAbbreviation);
-    else
-        saveAllToLocalStorage(); // removeAbbreviation() handles saving when called; no need to do it twice in that case
-}
-
-
-function ensureExtraAbbreviationMappingTableRow()
-{
-    const lastRow = abbreviationMappingTable.find("tr").last();
-    const abbreviation = lastRow.find("input").first();
-
-    if(!abbreviation.length || abbreviation.val().length)
-        addAbbreviationMappingTableRow("", "");
-}
-
-
 function copyAsTextListToClipboard()
 {
     const itemStrs = [];
@@ -997,7 +894,6 @@ function copyAsTextListToClipboard()
     navigator.clipboard.writeText(textList);
 }
 
-
 // maybe include Item somewhere in this function name
 function getMaxPrice(itemNameTitleSnakeCase)
 {
@@ -1008,6 +904,7 @@ function getMaxPrice(itemNameTitleSnakeCase)
             action: "parse",
             page: properPageName,
             format: "json",
+            prop: "text", // this makes it so it only fetches the text portion; I might want to swap over to the properties portion instead?  TODO -- look more into this.
         });
 
     return fetch(url)
@@ -1123,17 +1020,14 @@ function calculateTotalSelectedPrice()
         }
     }
 
-    if(message === undefined)
-        totalPriceMessageHolder.prop("hidden", true);
-    else
+    const hasMessage = message !== undefined;
+    if(hasMessage)
     {
         totalPriceMessageHolder.text(message);
         totalPriceMessageHolder.css("color", isError ? "red" : "purple");
-
-        totalPriceMessageHolder.prop("hidden", false);
     }
+    totalPriceMessageHolder.prop("hidden", !hasMessage);
 
-    // console.log(equations.join(" + "));
     totalPriceEquationHolder.text(equations.join(" + "));
 
     return total;
@@ -1153,16 +1047,6 @@ function updateTotalPrice()
     const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
 
     totalPriceHolder.html(`${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;">`);
-}
-
-
-
-function updateBottomTextWidth()
-{
-    bottomText.width("auto");
-    // this preserves the entire formatting of the message since it is multiline (I couldn't find a good way to allow wrapping; setting the screenshot region's width to the itemtable's width temporarily to try and make the text wrap causes the bottom text's .width() to return the width that the parent screenshot region was set to, instead of its own true width)
-    const properWidth = Math.max(itemTable.width(), bottomText.width());
-    bottomText.width(`${properWidth}px`);
 }
 
 
@@ -1200,7 +1084,248 @@ function setSelectedStateAll(items, cells, isSelected)
     }
 }
 
+
+async function prepareAllItemNames()
+{
+    const itemNames = await getAllItemNames();
+
+    const prepared = [];
+    for(let itemName of itemNames)
+        prepared.push(fuzzysort.prepare(itemName));
+
+    return prepared;
+}
+
+// unfortunately, a few extra "item" names which are neither crops nor products get included ("Honey Mask" which is a duplicate of "Honey Face Mask", "Field", "Apple Tree", "Shop Icon", and "Coins"); I could manually remove these, but I'm not sure if that's a good idea.
+async function getAllItemNames()
+{
+    const fetchPortion = (pageName) =>
+    {
+        const url = "https://hayday.fandom.com/api.php?" +
+            new URLSearchParams({
+                origin: "*",
+                action: "parse",
+                page: pageName,
+                format: "json",
+                prop: "images", // this makes it so it only fetches the images portion
+            });
+
+        return fetch(url)
+            .then(response => response.json())
+            .then(json => json.parse.images)
+            .then(images => images.map(image => image.split(".png")[0].replaceAll("_", " ")));
+    };
+
+    const productNames = await fetchPortion("Products");
+    const cropNames = await fetchPortion("Crops");
+
+    return productNames.concat(cropNames);
+}
+
+function updateFuzzyMatches()
+{
+    const matches = fuzzysort.go(itemNameInput.val(), preparedItemNames, {limit: 10});
+
+    const matchHTMLs = [];
+    let i = 0;
+    for(let match of matches)
+    {
+        i++;
+
+        // matchHTMLs.push([match.target, fuzzysort.highlight(match)]);
+
+        const div = document.createElement("div");
+
+        const button = document.createElement("button");
+        button.tabIndex = -1;
+        button.innerHTML = fuzzysort.highlight(match, "<b style='color: orange;'>", "</b>");
+        $(button).on("mousedown", {itemName: match.target}, (event) =>
+        {
+            itemNameInput.val(event.data.itemName);
+
+            // need to wait for the mouseup event in order to refocus/reselect the input field (using .one to make sure it only happens once, and using the document as the object to ensure this occurs no matter where on the screen the mouseup happens)
+            $(document).one("mouseup", () =>
+            {
+                itemNameInput.trigger("select")
+            });
+        });
+
+        const p = document.createElement("p");
+        p.innerText = i === 10 ? 0 : i;
+
+
+        div.appendChild(button);
+        div.appendChild(p);
+
+        matchHTMLs.push(div);
+    }
+
+    fuzzyMatchesHolder.empty();
+    fuzzyMatchesHolder[0].append(...matchHTMLs);
+}
+
+
+/* -------- scripts/Settings.js -------- */
+function setUpAbbreviationMappingTable()
+{
+    for(let [abbreviation, abbreviationExpanded] of abbreviationMapping)
+        addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded);
+
+    ensureExtraAbbreviationMappingTableRow();
+}
+
+function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded)
+{
+    const abbreviationTableRow = document.createElement("tr");
+
+    const abbreviationCell = document.createElement("td");
+    const abbreviationExpandedCell = document.createElement("td");
+
+    const abbreviationInput = document.createElement("input");
+    $(abbreviationInput).on("change", handleAbbreviationChange);
+    abbreviationInput.value = abbreviation;
+    abbreviationInput.dataset.previousValue = abbreviation;
+    const abbreviationExpandedInput = document.createElement("input");
+    $(abbreviationExpandedInput).on("change", handleAbbreviationChange);
+    abbreviationExpandedInput.value = abbreviationExpanded;
+    // abbreviationExpandedInput.dataset.previousValue = abbreviationExpanded;
+
+
+    abbreviationCell.appendChild(abbreviationInput);
+    abbreviationExpandedCell.appendChild(abbreviationExpandedInput);
+
+    abbreviationTableRow.appendChild(abbreviationCell);
+    abbreviationTableRow.appendChild(abbreviationExpandedCell);
+
+    abbreviationMappingTable.append(abbreviationTableRow);
+}
+
+function handleAbbreviationChange(event)
+{
+    const previousValue = event.target.dataset.previousValue;
+
+    const row = $(event.target).closest("tr");
+    const cells = row.find("input");
+    const abbreviation = cells.eq(0);
+
+    if(!abbreviation.val().length)
+    {
+        removeAbbreviation(previousValue);
+        row.remove();
+
+        ensureExtraAbbreviationMappingTableRow();
+
+        return;
+    }
+    const abbreviationExpanded = cells.eq(1);
+
+    abbreviation.val(abbreviation.val().trim().toLowerCase());
+    abbreviationExpanded.val(abbreviationExpanded.val().trim().toLowerCase());
+
+    updateAbbreviation(previousValue, abbreviation.val(), abbreviationExpanded.val());
+
+    abbreviation[0].dataset.previousValue = abbreviation.val();
+
+    ensureExtraAbbreviationMappingTableRow();
+};
+
+
+function removeAbbreviation(abbreviation)
+{
+    abbreviationMapping.delete(abbreviation);
+
+    saveAllToLocalStorage();
+}
+
+function updateAbbreviation(oldAbbreviation, newAbbreviation, abbreviationExpanded)
+{
+    abbreviationMapping.set(newAbbreviation, abbreviationExpanded);
+
+    if(oldAbbreviation !== newAbbreviation)
+        removeAbbreviation(oldAbbreviation);
+    else
+        saveAllToLocalStorage(); // removeAbbreviation() handles saving when called; no need to do it twice in that case
+}
+
+
+function ensureExtraAbbreviationMappingTableRow()
+{
+    const lastRow = abbreviationMappingTable.find("tr").last();
+    const abbreviation = lastRow.find("input").first();
+
+    if(!abbreviation.length || abbreviation.val().length)
+        addAbbreviationMappingTableRow("", "");
+}
+
+
+/* -------- scripts/Persist.js -------- */
+function loadAllFromLocalStorage()
+{
+    const sItems = localStorage.getItem("items");
+    if(sItems)
+    {
+        // converts each "object" back into an object of type Item (not sure if I really need to do this)
+        let kvps = JSON.parse(sItems);
+        for(let i in kvps)
+            kvps[i][1] = Object.assign(new Item(), kvps[i][1]);
+        items = new Map(kvps);
+    }
+
+    const sAbbreviationMapping = localStorage.getItem("abbreviationMapping");
+    if(sAbbreviationMapping)
+        abbreviationMapping = new Map(JSON.parse(sAbbreviationMapping));
+
+    const sBottomText = localStorage.getItem("bottomText");
+    bottomText[0].innerText = sBottomText ?? "Partials Accepted"; // just like the abbreviations, I give a "reasonable" default
+
+    const sItemsPerRow = localStorage.getItem("itemsPerRow") ?? 8; // default 8
+    itemsPerRowSlider.val(sItemsPerRow);
+    itemsPerRowLabel.text(sItemsPerRow);
+    itemsPerRow = sItemsPerRow;
+
+    textListSeparatorSelectedRadio = localStorage.getItem("textListSeparatorSelectedRadio") ?? 0;
+    const sTextListCustomSeparator = localStorage.getItem("textListCustomSeparator") ?? "";
+    textListSeparatorCustomRadio.val(sTextListCustomSeparator);
+    textListCustomSeparatorInput.val(sTextListCustomSeparator);
+
+    const sTextListFormat = localStorage.getItem("textListFormat") ?? "{{quantity}} {{name}} ({{price}})"; // default format on right
+    textListFormatInput.val(sTextListFormat);
+
+    const sPriceCalculationItem = localStorage.getItem("priceCalculationItem") ?? "Diamond Ring"; // default to rings
+    priceCalculationItemInput.val(sPriceCalculationItem);
+}
+
+function saveAllToLocalStorage()
+{
+    // console.log("Saved");
+    saveItemsToLocalStorage();
+    localStorage.setItem("abbreviationMapping", JSON.stringify([...abbreviationMapping]));
+    localStorage.setItem("bottomText", bottomText[0].innerText); // must use innerText for newlines to be handled properly
+    // localStorage.setItem("bottomText", bottomTextSettingInput.val()); // can just use the setting input's value instead, though maybe I should keep it consistent with the loadAll, due to the way I load it into the bottom text then into the setting
+    localStorage.setItem("itemsPerRow", itemsPerRowSlider.val());
+    localStorage.setItem("textListSeparatorSelectedRadio", textListSeparatorSelectedRadio);
+    localStorage.setItem("textListCustomSeparator", textListCustomSeparatorInput.val());
+    localStorage.setItem("textListFormat", textListFormatInput.val());
+    localStorage.setItem("priceCalculationItem", priceCalculationItemInput.val());
+}
+
+function saveItemsToLocalStorage()
+{
+    localStorage.setItem("items", JSON.stringify([...items], (key, value) => Item.fieldsToOmitFromLocalStorage.includes(key) ? undefined : value));
+}
+
+
+/* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.2", `Features:
+- Added fuzzy searching/matching for item names, making it much easier and faster to input the name of a given item.  Fuzzy searching basically allows you to skip letters and even have them partially out of order, while still finding the "best" matches.  Give it a try, and you will see what I mean (it also shows visually what part of the matched terms it is "selecting").
+- In addition to clicking from the list of matches, you can input 1-9, 0 while typing a name to select that numbered match to fill in.
+
+UI Changes:
+- The grid now centers relative to the bottom text when the bottom text is wider than the grid.  (I initially made the grid just center completely on the page, but that would cause items to shift to the left/right visually when adding/removing items from the first row, which would be a bit annoying.)
+
+Misc:
+- Split the js file into multiple separate purposeful files/file names.  (Also wrote a script which compiles all the js files into a single one for actual use by github pages.)`],
     ["v2.1", `Features:
 - Popups now close when you click "out of them" (when you click the semi-transparent background); this makes it easier to exit without scrolling back up to the x button (also working on getting that x button to stay put at some point)
 

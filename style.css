@@ -33,6 +33,11 @@ button + button
     cursor: pointer;
 }
 
+#itemTable
+{
+    margin: 0 auto; /* makes the table stay centered in the div ( https://stackoverflow.com/questions/7059394/how-to-position-a-table-at-the-center-of-div-horizontally-vertically ) */
+}
+
 .itemCell
 {
     position: relative;
@@ -223,5 +228,41 @@ td.selected:hover
 {
     font-weight: bold;
     /*-webkit-text-stroke: 0.5px #000a;*/
+}
+
+#fuzzyMatchesHolder
+{
+    position: absolute;
+    width: 100%;
+    z-index: 1;
+}
+
+#fuzzyMatchesHolder button
+{
+    width: 100%;
+    background-color: grey;
+    border-color: grey;
+    color: white;
+}
+
+#fuzzyMatchesHolder div
+{
+    position: relative; /* needed so that absolute position of p children works properly */
+}
+
+#fuzzyMatchesHolder p
+{
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 2px;
+
+    padding: 0;
+    margin: 0;
+
+    font-size: 10pt;
+    font-weight: bold;
+
+    color: lime;
 }
 

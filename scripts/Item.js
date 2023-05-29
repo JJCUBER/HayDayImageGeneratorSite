@@ -1,0 +1,726 @@
+// There are more operators than the ones here technically supported by math.js, but I feel like these are all the "reasonable" ones to support for the automatic prepending of the old quantity/custom quantity ( https://mathjs.org/docs/expressions/syntax.html )
+const operators = ['+', '-', '*', '/', '^', '%', "mod", '&', '|', "<<", ">>>", ">>"]; // >>> should be before >> to ensure the full operator gets removed then readded later (if >> was first, ">>> 5" would only remove the first 2 '>' leaving "> 5")
+function handleAddingItem(e)
+{
+    // only want the name box to have the invalid red border until the user starts typing again (tabbing into this textbox also cancels it; unfortunately, this gets removed almost immediately if the user starts typing right after pressing enter, since it takes a bit of time for the fetch to occur and for the invalid class to be added, if needed)
+    if(itemNameInput.hasClass("invalid"))
+        itemNameInput.removeClass("invalid");
+
+
+    // TODO -- might want to be using e.key instead
+    if(e.code !== "Enter")
+        return;
+
+    const itemNameFormatted = formatItemName(itemNameInput.val());
+    if(!itemNameFormatted.length)
+        return;
+
+    let itemQuantity, prependedQuantityOperator = "";
+    let itemQuantityEquation = itemQuantityInput.val().trim();
+    // only want to separate starting operator if the item already exists (if the item doesn't exist, the whole quantity should be evaluated as one equation)
+    if(items.has(itemNameFormatted))
+    {
+        for(let operator of operators)
+        {
+            if(!itemQuantityEquation.startsWith(operator))
+                continue;
+
+            prependedQuantityOperator = operator;
+            itemQuantityEquation = itemQuantityEquation.substr(prependedQuantityOperator.length);
+            break;
+        }
+    }
+
+    try
+    {
+        // rest of equation is calculated beforehand so that addItem() gets an actual value
+        itemQuantity = itemQuantityEquation.length ? math.evaluate(itemQuantityEquation) : 0;
+    }
+    catch(e)
+    {
+        console.log("Unable to evaluate quantity --", e);
+        return;
+    }
+
+    addItem(itemNameFormatted, itemQuantity, itemPriceOrMultiplierInput.val(), prependedQuantityOperator)
+        .then(() => updateItemLayout())
+        .catch(e =>
+        {
+            console.log("Failed to add item and update layout --", e);
+
+            itemNameInput.addClass("invalid");
+        });
+
+    itemNameInput.val("");
+    itemQuantityInput.val(1);
+    itemPriceOrMultiplierInput.val("5x");
+}
+
+
+class Item
+{
+    static fieldsToOmitFromLocalStorage = ["customQuantity", "customPriceOrMultiplier", "isSelected"];
+    constructor(name, quantity, url, priceOrMultiplier, maxPrice)
+    {
+        this.name = name;
+        this.quantity = quantity;
+        this.url = url;
+        this.priceOrMultiplier = priceOrMultiplier;
+        this.maxPrice = maxPrice;
+
+        // these should not persist across sessions (I also omit them from the JSON.stringify)
+        this.customQuantity = undefined;
+        this.customPriceOrMultiplier = undefined;
+        this.isSelected = false;
+    }
+
+    getHumanReadableName()
+    {
+        return this.name.replaceAll("_", " ");
+    }
+
+    // returns [totalPrice, equation, error, warning]
+    calculateTotalPrice()
+    {
+        let quantity = this.customQuantity ?? this.quantity,
+            priceOrMultiplier = this.customPriceOrMultiplier ?? this.priceOrMultiplier,
+            maxPrice = this.maxPrice;
+
+        if(!maxPrice)
+            return [NaN, "NaN", `${this.getHumanReadableName()} doesn't have a valid maximum price (${maxPrice}).`];
+
+
+        priceOrMultiplier = priceOrMultiplier.trim();
+
+        let price, mult;
+        let warning;
+        if(!priceOrMultiplier.length)
+        {
+            mult = "1";
+            warning = `The price/multiplier for ${this.getHumanReadableName()} was empty, so it was defaulted to 1x.` ;
+        }
+        else if(priceOrMultiplier.endsWith('x'))
+            mult = priceOrMultiplier.slice(0, -1);
+        else if(priceOrMultiplier.endsWith('k'))
+            price = `(${priceOrMultiplier.slice(0, -1)})*10^3`;
+        else if(priceOrMultiplier.endsWith('m'))
+            price = `(${priceOrMultiplier.slice(0, -1)})*10^6`;
+        else
+            price = priceOrMultiplier;
+
+        if(mult)
+            price = `${maxPrice}*(${mult})`;
+        // I'm doing this so that it can be shown to the user in full
+        price = `${quantity}*(${price})`;
+
+        try
+        {
+            return [math.evaluate(price), price, undefined, warning];
+        }
+        catch(e)
+        {
+            console.log(e);
+            // I believe that it would only ever be an issue with the price/mult?
+            // return [NaN, price, `${this.getHumanReadableName()} has some invalid value (quantity: ${quantity}, price/multiplier: ${priceOrMultiplier}, max price: ${maxPrice} -- equation: ${price}).`, warning];
+            return [NaN, price, `${this.getHumanReadableName()} has an invalid price/multiplier (price/multiplier: ${priceOrMultiplier} -- equation: ${price}).`, warning];
+        }
+    }
+}
+
+
+function addItem(itemNameFormatted, itemQuantity, itemPriceOrMultiplier, prependedQuantityOperator = "")
+{
+    const isInPriceCalculationMode = getIsInPriceCalculationMode();
+
+    // the itemQuantity is already completely calculated, but we need to ensure that it isn't floating-point
+    if(!prependedQuantityOperator)
+        itemQuantity = Math.floor(itemQuantity);
+
+    if(items.has(itemNameFormatted))
+    {
+        const currItem = items.get(itemNameFormatted);
+
+        // modifies the custom fields instead when in price calculation mode
+        if(isInPriceCalculationMode)
+        {
+            if(prependedQuantityOperator.length)
+                itemQuantity = Math.floor(math.evaluate(`${currItem.customQuantity ?? currItem.quantity} ${prependedQuantityOperator} ${itemQuantity}`));
+            // only stores custom if it differs; custom quantity set to <=0 defaults back to normal quantity, and custom price/mult gets wiped if its field becomes empty (otherwise the user might try to wipe it out, only to find out that it makes the mult default to 1x)
+            currItem.customQuantity = (itemQuantity > 0 && itemQuantity !== currItem.quantity) ? itemQuantity : undefined;
+            currItem.customPriceOrMultiplier = (itemPriceOrMultiplier.trim().length && itemPriceOrMultiplier !== currItem.priceOrMultiplier) ? itemPriceOrMultiplier : undefined;
+
+            // makes sure that the item just modified is selected so that the custom value is visible to the user (if the user modified the value, they likely wanted it to be selected); this is to help with the fact that clicking on a selected item's quantity/price will deselect it
+            currItem.isSelected = true;
+
+            return Promise.resolve();
+        }
+
+        if(prependedQuantityOperator.length)
+            itemQuantity = Math.floor(math.evaluate(`${currItem.quantity} ${prependedQuantityOperator} ${itemQuantity}`));
+
+        if(itemQuantity > 0)
+        {
+            const prevQuantity = currItem.quantity;
+            currItem.quantity = itemQuantity;
+            currItem.priceOrMultiplier = itemPriceOrMultiplier;
+
+            // need to wipe out custom values if they now match the new quantity/prices
+            if(currItem.customQuantity === currItem.quantity || (currItem.customQuantity > currItem.quantity && currItem.customQuantity < prevQuantity)) // after updating an item's actual quantity, custom quantities above it should reset/"snap" back to the new quantity (unless it was already above it; custom quantity won't ever equal previous quantity, since it would have just gotten reset to undefined)
+                currItem.customQuantity = undefined;
+            if(currItem.customPriceOrMultiplier === currItem.priceOrMultiplier)
+                currItem.customPriceOrMultiplier = undefined;
+        }
+        else
+            items.delete(itemNameFormatted);
+
+        saveAllToLocalStorage();
+
+        return Promise.resolve();
+    }
+
+    // don't want to add new items in this mode
+    if(isInPriceCalculationMode)
+        return Promise.resolve();
+
+    if(itemQuantity <= 0)
+        return Promise.resolve();
+
+    return getImageUrl(itemNameFormatted)
+        .then(async imageUrl =>
+        {
+            console.log(imageUrl);
+
+            const maxPrice = await getMaxPrice(itemNameFormatted);
+
+            items.set(itemNameFormatted, new Item(itemNameFormatted, itemQuantity, imageUrl, itemPriceOrMultiplier, maxPrice));
+
+            saveAllToLocalStorage();
+        });
+}
+
+
+function formatItemName(itemName)
+{
+    const itemNameTrimmed = itemName.trim();
+    if(!itemNameTrimmed.length)
+        return itemNameTrimmed;
+
+    const unabbreviatedItemName = handleAbbreviations(itemNameTrimmed);
+    const itemNameTitleSnakeCase = convertToTitleSnakeCase(unabbreviatedItemName);
+    const itemNameFormatted = handleSpecialNames(itemNameTitleSnakeCase);
+
+    return itemNameFormatted;
+}
+
+function handleAbbreviations(itemName)
+{
+    return abbreviationMapping.get(itemName.toLowerCase()) ?? itemName;
+}
+
+// Items with "abnormal" casing are abbreviations and items with the word "and" in them (I could just replace all and's with And, but that might not be very future-proof or have a weird edge-case)
+const specialNameMapping = new Map([
+    ["Tnt_Barrel", "TNT_Barrel"],
+    ["Blt_Salad", "BLT_Salad"],
+    ["Bacon_And_Eggs", "Bacon_and_Eggs"],
+    ["Fish_And_Chips", "Fish_and_Chips"],
+    ["Peanut_Butter_And_Jelly_Sandwich", "Peanut_Butter_and_Jelly_Sandwich"],
+    ["Frutti_Di_Mare_Pizza", "Frutti_di_Mare_Pizza"]
+]);
+function handleSpecialNames(itemName)
+{
+    return specialNameMapping.get(itemName) ?? itemName;
+}
+
+function getImageUrl(itemNameTitleSnakeCase, imageWidth = 100)
+{
+    // https://www.mediawiki.org/wiki/API:Imageinfo
+    return fetch(`https://hayday.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:${itemNameTitleSnakeCase}.png&iiurlwidth=${imageWidth}&format=json&origin=*`)
+        .then(response => response.json())
+        .then(data =>
+        {
+            // console.log(data);
+            const pages = data.query.pages;
+            const pageId = Object.keys(pages)[0];
+            // for some reason, this works fine but the resultant wikia static image url yields a 404 from github pages ONLY when scaled down
+            // return pages[pageId].imageinfo[0].thumburl;
+            return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
+        });
+
+}
+
+let previousSelection;
+function updateItemLayout()
+{
+    itemTable.empty();
+
+    if(!items.size)
+        return;
+
+    const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
+
+    const itemCt = itemsSortedDescending.length;
+    let rowCt = Math.ceil(itemCt / itemsPerRow);
+
+    const shouldShowSelection = getIsInPriceCalculationMode();
+    previousSelection = undefined;
+
+    let i = 0;
+    while(rowCt--)
+    {
+        const tableRow = document.createElement("tr");
+        for(let j = 0; i < itemCt && j < itemsPerRow; i++, j++)
+        {
+            const currItem = itemsSortedDescending[i];
+            const tableCell = document.createElement("td");
+            tableCell.classList.add("itemCell");
+
+            if(shouldShowSelection && currItem.isSelected)
+                tableCell.classList.add("selected");
+
+            // must be mouseup to execute before the on click events for image, quantity, and label (since they must select the text after it has been overridden by this)
+            $(tableCell).on("mouseup", {index: i, item: currItem}, (event) =>
+            {
+                const item = event.data.item;
+                itemNameInput.val(item.getHumanReadableName());
+                itemQuantityInput.val(shouldShowSelection ? (item.customQuantity ?? item.quantity) : item.quantity);
+                itemPriceOrMultiplierInput.val(shouldShowSelection ? (item.customPriceOrMultiplier ?? item.priceOrMultiplier) : item.priceOrMultiplier);
+
+                if(!shouldShowSelection)
+                    return;
+
+
+                const index = event.data.index;
+                const [first, last] = [index, previousSelection ?? index].sort((n1, n2) => n1 - n2);
+                if(event.shiftKey) // range additive
+                {
+                    $("#itemTable td").slice(first, last + 1)
+                        .each((k, elem) =>
+                        {
+                            const currItem = itemsSortedDescending[first + k];
+                            setSelectedState(currItem, elem, true);
+                        });
+                }
+                else if(event.altKey) // range subtractive; must use if else if... to make sure previousSelection always gets set
+                {
+                    $("#itemTable td").slice(first, last + 1)
+                        .each((k, elem) =>
+                        {
+                            const currItem = itemsSortedDescending[first + k];
+                            setSelectedState(currItem, elem, false);
+                        });
+                }
+                else if(event.ctrlKey) // range toggle
+                {
+                    $("#itemTable td").slice(first, last + 1)
+                        .each((k, elem) =>
+                        {
+                            const currItem = itemsSortedDescending[first + k];
+                            setSelectedState(currItem, elem, !currItem.isSelected);
+                        });
+                }
+                else // normal selection (individual toggle)
+                {
+                    const cell = event.currentTarget;
+                    setSelectedState(item, cell, !item.isSelected);
+                }
+
+                updateTotalPrice();
+
+                previousSelection = index;
+            });
+
+            const image = document.createElement("img");
+            image.src = currItem.url;
+            image.className = "itemImage";
+            $(image).on("click", () =>
+            {
+                itemNameInput.trigger("select");
+            });
+
+            const quantityLabel = document.createElement("p");
+            quantityLabel.innerText = currItem.quantity;
+            quantityLabel.className = "quantityLabel";
+            $(quantityLabel).on("click", () =>
+            {
+                itemQuantityInput.trigger("select");
+            });
+
+            const priceLabel = document.createElement("p");
+            priceLabel.innerHTML = formatItemPriceLabel(currItem.priceOrMultiplier); // using innerHTML so that coin image is shown
+            priceLabel.className = "priceLabel";
+            $(priceLabel).on("click", () =>
+            {
+                itemPriceOrMultiplierInput.trigger("select");
+            });
+
+            let customQuantityLabel, customPriceLabel;
+            if(shouldShowSelection)
+            {
+                if(currItem.customQuantity !== undefined)
+                {
+                    customQuantityLabel = document.createElement("p");
+                    customQuantityLabel.innerText = currItem.customQuantity;
+                    customQuantityLabel.className = "customQuantityLabel";
+                    customQuantityLabel.hidden =  !currItem.isSelected;
+                    $(customQuantityLabel).on("click", () =>
+                    {
+                        itemQuantityInput.trigger("select");
+                    });
+                }
+
+                if(currItem.customPriceOrMultiplier !== undefined)
+                {
+                    customPriceLabel = document.createElement("p");
+                    customPriceLabel.innerHTML = formatItemPriceLabel(currItem.customPriceOrMultiplier); // using innerHTML so that coin image is shown
+                    customPriceLabel.className = "customPriceLabel";
+                    customPriceLabel.hidden =  !currItem.isSelected;
+                    $(customPriceLabel).on("click", () =>
+                    {
+                        itemPriceOrMultiplierInput.trigger("select");
+                    });
+                }
+            }
+
+            tableCell.appendChild(image);
+            tableCell.appendChild(quantityLabel);
+            tableCell.appendChild(priceLabel);
+            if(customQuantityLabel)
+                tableCell.appendChild(customQuantityLabel);
+            if(customPriceLabel)
+                tableCell.appendChild(customPriceLabel);
+
+            tableRow.appendChild(tableCell);
+        }
+
+        itemTable.append(tableRow);
+    }
+
+    if(shouldShowSelection)
+        updateTotalPrice();
+}
+
+function formatItemPriceLabel(priceOrMultiplier)
+{
+    const priceStr = String(priceOrMultiplier);
+    const priceStrTrimmed = priceStr.trim();
+    return priceOrMultiplier + (!priceStrTrimmed.length || priceStrTrimmed.endsWith('x') ? "" : `<img class="coin" src="${coinImageUrl}">`);
+}
+
+
+let isActivelyCopyingImage = false;
+function copyImageToClipboard()
+{
+    if(isActivelyCopyingImage)
+        return;
+    isActivelyCopyingImage = true;
+
+    const createdBy = document.createElement("p");
+    // for those of you reading this, I would appreciate if this doesn't get removed from the generated image
+    createdBy.innerText = "Tool Created by JJCUBER";
+    createdBy.style.textAlign = "right";
+    createdBy.style.fontSize = "10px";
+    createdBy.style.margin = "10px";
+    createdBy.style.marginTop = "2px";
+    createdBy.style.fontWeight = "900";
+    screenshotRegion.append(createdBy);
+
+    htmlToImage.toBlob(screenshotRegion[0])
+        .then(blob => new ClipboardItem({"image/png": blob}))
+        .then(clipboardItem => navigator.clipboard.write([clipboardItem]))
+        .catch(e =>
+        {
+            console.log("Unable to generate image and/or copy it to clipboard --", e);
+
+            // I might want to eventually catch right after toBlob() and do the above, then catch here to have a fallback of showing the image on screen for the user to save (or prompt to download).
+        })
+        .finally(() =>
+        {
+            $(createdBy).remove();
+            isActivelyCopyingImage = false;
+        });
+
+}
+
+function copyAsTextListToClipboard()
+{
+    const itemStrs = [];
+
+    const format = textListFormatInput.val();
+    const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
+    for(let item of itemsSortedDescending)
+        itemStrs.push(formatTextListItem(format, item));
+
+    const textList = itemStrs.join(textListSeparatorRadios[textListSeparatorSelectedRadio].value);
+    navigator.clipboard.writeText(textList);
+}
+
+// maybe include Item somewhere in this function name
+function getMaxPrice(itemNameTitleSnakeCase)
+{
+    const properPageName = handleSpecialPageNames(itemNameTitleSnakeCase);
+    const url = "https://hayday.fandom.com/api.php?" +
+        new URLSearchParams({
+            origin: "*",
+            action: "parse",
+            page: properPageName,
+            format: "json",
+            prop: "text", // this makes it so it only fetches the text portion; I might want to swap over to the properties portion instead?  TODO -- look more into this.
+        });
+
+    return fetch(url)
+        .then(response => response.json())
+        .then(json => json.parse.text["*"])
+        .then(html =>
+        {
+            // const priceRange = $(html).find("aside.portable-infobox span[title='Coin(s)']").first().parent().text();
+            const priceRange = $(html).find("aside.portable-infobox div[data-source='price']").children().text();
+            const maxPrice = parseInt(priceRange.split(" to ")[1]);
+            console.log(itemNameTitleSnakeCase, "max price:", maxPrice);
+            return maxPrice;
+        }).catch(e =>
+        {
+            console.log(e);
+            console.log(itemNameTitleSnakeCase, "max price:", NaN);
+
+            return NaN;
+        });
+}
+
+// Some hay day wiki url's have special characters and/or differ from the normal in-game names of items; the _ isn't really needed since the api used for getting the site "normalizes" the input
+// I was contemplating using the api for query with search, but I don't want to risk getting the wrong page/item price for a given item
+const specialPageNameMapping = new Map([
+    ["Shepherds_Pie", "Shepherd's_Pie"],
+    ["Caffe_Latte", "Caffè_Latte"],
+    ["Caffe_Mocha", "Caffè_Mocha"]
+]);
+function handleSpecialPageNames(itemName)
+{
+    return specialPageNameMapping.get(itemName) ?? itemName;
+}
+
+async function ensureItemsHaveMaxPriceSet()
+{
+    let shouldSave = false;
+    for(let item of items.values())
+    {
+        // conversion to JSON using stringify makes NaN become null, so I am adding it back here; this is to ensure any calculations with this value yield NaN, instead of something like 0 (null*5 === 0)
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
+        // https://stackoverflow.com/questions/21896792/force-json-stringify-to-emit-nan-infinity-or-js-json-lib-that-does-so
+        if(item.maxPrice === null)
+        {
+            item.maxPrice = NaN;
+            continue;
+        }
+        if(item.maxPrice !== undefined)
+            continue;
+
+        item.maxPrice = await getMaxPrice(item.name);
+        shouldSave = true;
+
+        // updates the total price along the way if currently in price calculation mode (I'm doing this instead of only doing it once at the end so that the user can see the price updating as it gets loaded)
+        if(getIsInPriceCalculationMode())
+            updateTotalPrice();
+    }
+
+    // I don't foresee any issues with this randomly saving (since this async function is called synchronously to prevent the page from getting stuck while this function executes) because any modification to the items elsewhere would ... never mind
+    // this might cause issues, since it could save while in the middle of modifying an item abbreviation; if the user never "commits" these changes themself by closing out of the site (which might prevent the change event from occurring?), then some partially modified state would be saved randomly from this function; it might just be best to have this be redone each time the site loads until the user modifies something themself which forces a save all.
+    // if(shouldSave)
+        // saveAllToLocalStorage();
+
+
+    // the solution is to only save the items, since items don't carry any intermediate state (any modification to items is immediately saved to local storage)
+    if(shouldSave)
+        saveItemsToLocalStorage();
+}
+
+
+function formatTextListItem(format, item)
+{
+    return format.replaceAll("{{name}}", item.getHumanReadableName())
+        .replaceAll("{{quantity}}", item.quantity)
+        .replaceAll("{{price}}", item.priceOrMultiplier);
+}
+
+
+function calculateTotalSelectedPrice()
+{
+    let total = 0;
+    let equations = [];
+    // we go through it in quantity descending order to make the equation be in the same order as the items in the grid
+    const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
+    let message, isError = false;
+    for(let item of itemsSortedDescending)
+    {
+        if(!item.isSelected)
+            continue;
+
+        let [itemTotalPrice, equation, error, warning] = item.calculateTotalPrice();
+
+        // this is always done since it'll make sure that the total becomes NaN if there is an error
+        total += itemTotalPrice;
+
+        // should push the current equation, even if it causes an error below (so that the user can see where in the equation it happened)
+        equations.push(equation);
+
+        if(error)
+        {
+            console.log(error);
+
+            message = error;
+            isError = true;
+            break;
+        }
+
+        if(warning)
+        {
+            console.log(warning);
+
+            // only want to show first warning
+            message ??= warning;
+        }
+    }
+
+    const hasMessage = message !== undefined;
+    if(hasMessage)
+    {
+        totalPriceMessageHolder.text(message);
+        totalPriceMessageHolder.css("color", isError ? "red" : "purple");
+    }
+    totalPriceMessageHolder.prop("hidden", !hasMessage);
+
+    totalPriceEquationHolder.text(equations.join(" + "));
+
+    return total;
+}
+
+// it might be better to check whether in price calculation mode here instead of everywhere before calling this function, though that might be slower in scenarios where I have the state (of whether being in price calculation mode or not) cached.
+function updateTotalPrice()
+{
+    const totalPrice = calculateTotalSelectedPrice();
+    const totalPriceFormatted = totalPrice.toLocaleString();
+
+    // hasn't loaded yet
+    if(!priceCalculationItem)
+        return;
+
+    const totalPriceInItems = +(totalPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
+    const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
+
+    totalPriceHolder.html(`${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;">`);
+}
+
+
+function getIsInPriceCalculationMode()
+{
+    return !totalPriceArea.is("[hidden]");
+}
+
+
+function setSelectedState(item, cell, isSelected)
+{
+    item.isSelected = isSelected;
+
+    if(isSelected)
+        cell.classList.add("selected");
+    else
+        cell.classList.remove("selected");
+
+    $(cell).find(".customQuantityLabel,.customPriceLabel").prop("hidden", !isSelected);
+}
+
+function setSelectedStateAll(items, cells, isSelected)
+{
+    for(let item of items)
+        item.isSelected = isSelected;
+
+    for(let cell of cells)
+    {
+        if(isSelected)
+            cell.classList.add("selected");
+        else
+            cell.classList.remove("selected");
+
+        $(cell).find(".customQuantityLabel,.customPriceLabel").prop("hidden", !isSelected);
+    }
+}
+
+
+async function prepareAllItemNames()
+{
+    const itemNames = await getAllItemNames();
+
+    const prepared = [];
+    for(let itemName of itemNames)
+        prepared.push(fuzzysort.prepare(itemName));
+
+    return prepared;
+}
+
+// unfortunately, a few extra "item" names which are neither crops nor products get included ("Honey Mask" which is a duplicate of "Honey Face Mask", "Field", "Apple Tree", "Shop Icon", and "Coins"); I could manually remove these, but I'm not sure if that's a good idea.
+async function getAllItemNames()
+{
+    const fetchPortion = (pageName) =>
+    {
+        const url = "https://hayday.fandom.com/api.php?" +
+            new URLSearchParams({
+                origin: "*",
+                action: "parse",
+                page: pageName,
+                format: "json",
+                prop: "images", // this makes it so it only fetches the images portion
+            });
+
+        return fetch(url)
+            .then(response => response.json())
+            .then(json => json.parse.images)
+            .then(images => images.map(image => image.split(".png")[0].replaceAll("_", " ")));
+    };
+
+    const productNames = await fetchPortion("Products");
+    const cropNames = await fetchPortion("Crops");
+
+    return productNames.concat(cropNames);
+}
+
+function updateFuzzyMatches()
+{
+    const matches = fuzzysort.go(itemNameInput.val(), preparedItemNames, {limit: 10});
+
+    const matchHTMLs = [];
+    let i = 0;
+    for(let match of matches)
+    {
+        i++;
+
+        // matchHTMLs.push([match.target, fuzzysort.highlight(match)]);
+
+        const div = document.createElement("div");
+
+        const button = document.createElement("button");
+        button.tabIndex = -1;
+        button.innerHTML = fuzzysort.highlight(match, "<b style='color: orange;'>", "</b>");
+        $(button).on("mousedown", {itemName: match.target}, (event) =>
+        {
+            itemNameInput.val(event.data.itemName);
+
+            // need to wait for the mouseup event in order to refocus/reselect the input field (using .one to make sure it only happens once, and using the document as the object to ensure this occurs no matter where on the screen the mouseup happens)
+            $(document).one("mouseup", () =>
+            {
+                itemNameInput.trigger("select")
+            });
+        });
+
+        const p = document.createElement("p");
+        p.innerText = i === 10 ? 0 : i;
+
+
+        div.appendChild(button);
+        div.appendChild(p);
+
+        matchHTMLs.push(div);
+    }
+
+    fuzzyMatchesHolder.empty();
+    fuzzyMatchesHolder[0].append(...matchHTMLs);
+}
+
