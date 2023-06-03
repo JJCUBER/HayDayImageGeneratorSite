@@ -14,6 +14,15 @@ function convertToTitleSnakeCase(phrase)
     return titleCaseWords.join("_");
 }
 
+// gotten from https://stackoverflow.com/questions/9038625/detect-if-device-is-ios
+const iOSPlatformList = ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'];
+function isRunningIOS()
+{
+    return iOSPlatformList.includes(navigator.platform) ||
+        // iPad on iOS 13 detection
+        (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+}
+
 
 /* -------- scripts/Globals.js -------- */
 let itemsPerRow = 8;
@@ -842,7 +851,7 @@ function updateItemLayout()
 
             const image = document.createElement("img");
             image.src = currItem.url;
-            image.className = "itemImage";
+            image.classList.add("itemImage");
             $(image).on("click", () =>
             {
                 itemNameInput.trigger("select");
@@ -856,7 +865,7 @@ function updateItemLayout()
 
             const quantityLabel = document.createElement("p");
             quantityLabel.innerText = currItem.quantity;
-            quantityLabel.className = "quantityLabel";
+            quantityLabel.classList.add("label", "quantityLabel");
             $(quantityLabel).on("click", () =>
             {
                 itemQuantityInput.trigger("select");
@@ -864,7 +873,7 @@ function updateItemLayout()
 
             const priceLabel = document.createElement("p");
             priceLabel.innerHTML = formatItemPriceLabel(currItem.priceOrMultiplier); // using innerHTML so that coin image is shown
-            priceLabel.className = "priceLabel";
+            priceLabel.classList.add("label", "priceLabel");
             $(priceLabel).on("click", () =>
             {
                 itemPriceOrMultiplierInput.trigger("select");
@@ -877,7 +886,7 @@ function updateItemLayout()
                 {
                     customQuantityLabel = document.createElement("p");
                     customQuantityLabel.innerText = currItem.customQuantity;
-                    customQuantityLabel.className = "customQuantityLabel";
+                    customQuantityLabel.classList.add("label",  "customLabel", "customQuantityLabel");
                     customQuantityLabel.hidden =  !currItem.isSelected;
                     $(customQuantityLabel).on("click", () =>
                     {
@@ -889,7 +898,7 @@ function updateItemLayout()
                 {
                     customPriceLabel = document.createElement("p");
                     customPriceLabel.innerHTML = formatItemPriceLabel(currItem.customPriceOrMultiplier); // using innerHTML so that coin image is shown
-                    customPriceLabel.className = "customPriceLabel";
+                    customPriceLabel.classList.add("label", "customLabel", "customPriceLabel");
                     customPriceLabel.hidden =  !currItem.isSelected;
                     $(customPriceLabel).on("click", () =>
                     {
@@ -945,6 +954,12 @@ function copyImageToClipboard()
 
     let screenshotBlob;
     htmlToImage.toBlob(screenshotRegion[0])
+        .then(async (blob) =>
+        {
+            // TODO -- it sounds like this might also happen with safari on mac occasionally?  I might might also want to check for the browser being safari.
+            // need to run a second time on iOS (it sounds like just returning the .toBlob call and .then()'ing it doesn't work based on https://github.com/bubkoo/html-to-image/issues/52#issuecomment-1255708420 , so that's why I'm awaiting it here [I don't think that would really be all so different from just returning and calling .then, but I will just do it like this since it seems to work])
+            return isRunningIOS() ? await htmlToImage.toBlob(screenshotRegion[0]) : blob;
+        })
         .then(blob => new ClipboardItem({"image/png": screenshotBlob = blob})) // also stores the blob in case the error is caught later
         .then(clipboardItem => navigator.clipboard.write([clipboardItem]))
         .then(createSuccessfulCopyNotification)
@@ -1089,6 +1104,7 @@ function calculateTotalSelectedPrice()
 {
     let total = 0;
     let equations = [];
+    // TODO -- I should instead filter this BEFORE sorting (doesn't change anything functionally, it's just more performant that way)
     // we go through it in quantity descending order to make the equation be in the same order as the items in the grid
     const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
     let message, isError = false;
@@ -1163,12 +1179,13 @@ function setSelectedState(item, cell, isSelected)
 {
     item.isSelected = isSelected;
 
+    // TODO -- classList.toggle() is a thing, maybe use this instead of the if/else?  toggle can either toggle based on whether the class is on the element or based on whether the second parameter passed is true.  https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList/toggle
     if(isSelected)
         cell.classList.add("selected");
     else
         cell.classList.remove("selected");
 
-    $(cell).find(".customQuantityLabel,.customPriceLabel").prop("hidden", !isSelected);
+    $(cell).find(".customLabel").prop("hidden", !isSelected);
 }
 
 function setSelectedStateAll(items, cells, isSelected)
@@ -1183,7 +1200,7 @@ function setSelectedStateAll(items, cells, isSelected)
         else
             cell.classList.remove("selected");
 
-        $(cell).find(".customQuantityLabel,.customPriceLabel").prop("hidden", !isSelected);
+        $(cell).find(".customLabel").prop("hidden", !isSelected);
     }
 }
 
@@ -1460,6 +1477,16 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.3.1", `Bug Fixes:
+- Fixed images not properly loading in screenshot for iOS devices (this might be an issue for Macs as well when using safari, but I have no way of testing it; let me know if you run into this issue)
+- Fixed outlines not showing in screenshot for iOS devices
+
+UI Changes:
+- Changed the color and outlines of price/multiplier and quantity labels (they should be more readable now)
+- Made the list of matches fade in when there previously weren't any/when the input is focused (it fades in only when going from a state of being empty -> non-empty)
+
+Misc:
+- Cleaned up and organized css`],
     ["v2.3", `Features:
 - Added toggle to hide unselected items (when in price calculation mode)
 - Added a (green) notification when something got successfully copied (image/text of item list), coupled with a nice animation (more about the animation in UI Changes)

@@ -1,4 +1,14 @@
 const changelog = new Map([
+    ["v2.3.1", `Bug Fixes:
+- Fixed images not properly loading in screenshot for iOS devices (this might be an issue for Macs as well when using safari, but I have no way of testing it; let me know if you run into this issue)
+- Fixed outlines not showing in screenshot for iOS devices
+
+UI Changes:
+- Changed the color and outlines of price/multiplier and quantity labels (they should be more readable now)
+- Made the list of matches fade in when there previously weren't any/when the input is focused (it fades in only when going from a state of being empty -> non-empty)
+
+Misc:
+- Cleaned up and organized css`],
     ["v2.3", `Features:
 - Added toggle to hide unselected items (when in price calculation mode)
 - Added a (green) notification when something got successfully copied (image/text of item list), coupled with a nice animation (more about the animation in UI Changes)

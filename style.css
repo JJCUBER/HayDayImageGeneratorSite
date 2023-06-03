@@ -5,6 +5,16 @@ body
     font-family: Arial;
 }
 
+button
+{
+    transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+button:active
+{
+    transform: scale(0.98);
+}
+
 button:hover:enabled
 {
     cursor: pointer;
@@ -16,132 +26,21 @@ button + button
     margin-left: 10px;
 }
 
-
-#bottomText
+button, input, textarea
 {
-    text-align: center;
-
-    font-size: 50px;
-    font-weight: bold;
-
-    margin-top: 10px;
-    margin-bottom: 0px; /* this makes the screenshotRegion div wrap more tightly around this */
+    border-style: solid;
+    /* outright specifying this seems to mess with the alignment of the items per row slider for some reason?  The default seems to be ~2px. */
+    /* border-width: 2px; */
 }
 
-#bottomText:hover
+input, textarea
 {
-    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
-#itemTable
+:is(input, textarea):focus
 {
-    margin: 0 auto; /* makes the table stay centered in the div ( https://stackoverflow.com/questions/7059394/how-to-position-a-table-at-the-center-of-div-horizontally-vertically ) */
-}
-
-.itemCell
-{
-    position: relative;
-}
-
-.itemImage
-{
-    width: 100px;
-    height: 100px;
-}
-
-
-/* the positioning for both of these labels behave weird; maybe fix at some point */
-
-.quantityLabel
-{
-    position: absolute;
-    top: 5px;
-    right: 5px;
-
-    font-size: 50px;
-    font-weight: bold;
-    color: white;
-
-    -webkit-text-stroke: 2px black;
-    transition: -webkit-text-stroke 0.2s;
-}
-.quantityLabel:hover, .customQuantityLabel:hover
-{
-    -webkit-text-stroke: 2px orange;
-}
-.customQuantityLabel
-{
-    position: absolute;
-    top: 53px;
-    left: 5px;
-
-    font-size: 25px;
-    font-weight: bold;
-    color: white;
-
-    -webkit-text-stroke: 2px red;
-    transition: -webkit-text-stroke 0.2s;
-}
-
-.priceLabel
-{
-    position: absolute;
-    transform: translate(0%, -100%);
-    top: 2px;
-    left: 2px;
-
-    font-size: 30px;
-    font-weight: bold;
-    color: black;
-    /* must do it like this, since the transition doesn't work for width of the stroke */
-    -webkit-text-stroke: 2px #0000;
-    transition: -webkit-text-stroke 0.2s;
-    --coin-stroke-color: #0004;
-}
-.priceLabel:hover, .customPriceLabel:hover
-{
-    -webkit-text-stroke: 2px orange;
-    --coin-stroke-color: #ffa50044;
-}
-.customPriceLabel
-{
-    position: absolute;
-    transform: translate(0%, -100%);
-    top: 2px;
-    right: 2px;
-
-    font-size: 25px;
-    font-weight: bold;
-    color: yellow;
-    -webkit-text-stroke: 2px red;
-    transition: -webkit-text-stroke 0.2s;
-    --coin-stroke-color: #0004;
-}
-
-.coin
-{
-    position: relative;
-    top: 2px;
-
-    /* have to manually specify width and height due to weird github pages issue */
-    width: 28px;
-    height: 28px;
-
-    /* nice outline */
-    /* based on https://stackoverflow.com/questions/12690444/css-border-on-png-image-with-transparent-parts */
-    --stroke-pos: 1px;
-    --stroke-neg: -1px;
-    /* --coin-stroke-color is set in priceLabel-related classes to handle hovering changing the outline */
-    filter:
-        drop-shadow(var(--stroke-pos) 0 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-neg) 0 var(--coin-stroke-color))
-        drop-shadow(0 var(--stroke-pos) 0 var(--coin-stroke-color))
-        drop-shadow(0 var(--stroke-neg) 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-pos) var(--stroke-pos) 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-pos) var(--stroke-neg) 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-neg) var(--stroke-pos) 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-neg) var(--stroke-neg) 0 var(--coin-stroke-color));
-    transition: filter 0.2s;
+    background-color: #ff05;
 }
 
 td
@@ -180,6 +79,146 @@ td.selected:hover
     border-color: purple; /* orange or pink might also work well */
 }
 
+
+
+#bottomText
+{
+    text-align: center;
+
+    font-size: 50px;
+    font-weight: bold;
+
+    margin-top: 10px;
+    margin-bottom: 0px; /* this makes the screenshotRegion div wrap more tightly around this */
+}
+
+#bottomText:hover
+{
+    cursor: pointer;
+}
+
+#itemTable
+{
+    margin: 0 auto; /* makes the table stay centered in the div ( https://stackoverflow.com/questions/7059394/how-to-position-a-table-at-the-center-of-div-horizontally-vertically ) */
+}
+
+.itemCell
+{
+    position: relative;
+}
+
+.itemImage
+{
+    width: 100px;
+    height: 100px;
+}
+
+
+/* the positioning for both of these labels behave weird; maybe fix at some point */
+
+
+.label
+{
+    position: absolute;
+
+    font-weight: bold;
+
+    color: white;
+
+    --labelOutlineColor: black; /* default */
+    text-shadow:
+    /* shadow */
+         0px  0px 10px var(--labelOutlineColor),
+
+    /* outline */
+        -1px -1px  0px var(--labelOutlineColor),
+         0px -1px  0px var(--labelOutlineColor),
+         1px -1px  0px var(--labelOutlineColor),
+         1px  0px  0px var(--labelOutlineColor),
+         1px  1px  0px var(--labelOutlineColor),
+         0px  1px  0px var(--labelOutlineColor),
+        -1px  1px  0px var(--labelOutlineColor),
+        -1px  0px  0px var(--labelOutlineColor);
+    transition: text-shadow 0.2s;
+}
+
+.quantityLabel
+{
+    top: 5px;
+    right: 5px;
+
+    font-size: 50px;
+}
+.quantityLabel:hover, .customQuantityLabel:hover
+{
+    --labelOutlineColor: orange;
+}
+.customQuantityLabel
+{
+    top: 53px;
+    left: 5px;
+
+    font-size: 25px;
+
+    --labelOutlineColor: red;
+}
+
+.priceLabel
+{
+    transform: translate(0%, -100%);
+    top: 2px;
+    left: 2px;
+
+    font-size: 30px;
+
+    --coin-stroke-color: #4444;
+}
+.priceLabel:hover, .customPriceLabel:hover
+{
+    --labelOutlineColor: orange;
+    --coin-stroke-color: #ffa50044;
+}
+.customPriceLabel
+{
+    transform: translate(0%, -100%);
+    top: 2px;
+    right: 2px;
+
+    font-size: 25px;
+    /* I don't know why I used to have this yellow, but if I decide to uncomment this again, the custom quantity label should also have this (which means I should apply this to .customLabel)
+    /* color: yellow; */
+    --coin-stroke-color: #0004;
+}
+.customLabel
+{
+    --labelOutlineColor: red;
+}
+
+.coin
+{
+    position: relative;
+    top: 2px;
+
+    /* have to manually specify width and height due to weird github pages issue */
+    width: 28px;
+    height: 28px;
+
+    /* nice outline */
+    /* based on https://stackoverflow.com/questions/12690444/css-border-on-png-image-with-transparent-parts */
+    --stroke-pos: 1px;
+    --stroke-neg: -1px;
+    /* --coin-stroke-color is set in priceLabel-related classes to handle hovering changing the outline */
+    filter:
+        drop-shadow(var(--stroke-pos) 0 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-neg) 0 var(--coin-stroke-color))
+        drop-shadow(0 var(--stroke-pos) 0 var(--coin-stroke-color))
+        drop-shadow(0 var(--stroke-neg) 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-pos) var(--stroke-pos) 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-pos) var(--stroke-neg) 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-neg) var(--stroke-pos) 0 var(--coin-stroke-color))
+        drop-shadow(var(--stroke-neg) var(--stroke-neg) 0 var(--coin-stroke-color));
+    transition: filter 0.2s;
+}
 
 #screenshotRegion
 {
@@ -244,23 +283,6 @@ td.selected:hover
 }
 
 
-button, input, textarea
-{
-    border-style: solid;
-    /* outright specifying this seems to mess with the alignment of the items per row slider for some reason?  The default seems to be ~2px. */
-    /* border-width: 2px; */
-}
-
-input, textarea
-{
-    transition: background-color 0.3s;
-}
-
-:is(input, textarea):focus
-{
-    background-color: #ff05;
-}
-
 /* need to use not disabled instead of enabled because some items which get selected don't have an enabled/disabled state (i.e. normal cells); said items should still properly show as selected */
 .selected:not(:disabled), .invalid
 {
@@ -287,16 +309,6 @@ input, textarea
     }
 }
 
-button
-{
-    transition: color 0.15s, background-color 0.15s, border-color 0.15s;
-}
-
-button:active
-{
-    transform: scale(0.98);
-}
-
 #totalPriceMessageHolder
 {
     font-weight: bold;
@@ -310,6 +322,12 @@ button:active
     position: absolute;
     width: 100%;
     z-index: 1;
+}
+
+/* animates when the list of matches goes from > non-empty */
+#fuzzyMatchesHolder:not(:empty)
+{
+    animation: fadeIn 0.2s forwards;
 }
 
 #fuzzyMatchesHolder button
