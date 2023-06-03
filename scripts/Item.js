@@ -256,13 +256,24 @@ function updateItemLayout()
     if(!items.size)
         return;
 
-    const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
-
-    const itemCt = itemsSortedDescending.length;
-    let rowCt = Math.ceil(itemCt / itemsPerRow);
 
     const shouldShowSelection = getIsInPriceCalculationMode();
     previousSelection = undefined;
+
+    let itemsUnsorted = [...items.values()];
+    // filter out unselected if the user wants them hidden
+    if(shouldShowSelection && shouldHideUnselectedItems)
+    {
+        itemsUnsorted = itemsUnsorted.filter(item => item.isSelected);
+
+        // nothing to show (since all of the items got filtered out), so we are done (also don't need to worry about updating the total price, since it always gets updated after clicking on any item's cell)
+        if(!itemsUnsorted.length)
+            return;
+    }
+    const itemsSortedDescending = itemsUnsorted.sort((item1, item2) => item2.quantity - item1.quantity);
+
+    const itemCt = itemsSortedDescending.length;
+    let rowCt = Math.ceil(itemCt / itemsPerRow);
 
     let i = 0;
     while(rowCt--)
@@ -335,6 +346,12 @@ function updateItemLayout()
             $(image).on("click", () =>
             {
                 itemNameInput.trigger("select");
+
+                // need to update the layout to not include items that just got deselected; I am only putting this in the event handler for clicking on the image itself, since I want the user to be able to modify price/mult and quantity without the item temporarily disappearing
+                // this does cause the problem of clicking the border of the cell toggling the item, but not hiding it when the user wants them hidden (since this event only listens for clicking on the image itself, not anywhere in the cell)
+                // TODO -- I'm wondering if I should make clicking on quantity/price not change the state of the selection in general, though that  could be a bit annoying if the user is trying to quickly select items.
+                if(shouldHideUnselectedItems)
+                    updateItemLayout();
             });
 
             const quantityLabel = document.createElement("p");
@@ -424,19 +441,42 @@ function copyImageToClipboard()
     createdBy.style.fontWeight = "900";
     screenshotRegion.append(createdBy);
 
+    copyImageLoadingWheel.prop("hidden", false);
+
+    let screenshotBlob;
     htmlToImage.toBlob(screenshotRegion[0])
-        .then(blob => new ClipboardItem({"image/png": blob}))
+        .then(blob => new ClipboardItem({"image/png": screenshotBlob = blob})) // also stores the blob in case the error is caught later
         .then(clipboardItem => navigator.clipboard.write([clipboardItem]))
+        .then(createSuccessfulCopyNotification)
         .catch(e =>
         {
             console.log("Unable to generate image and/or copy it to clipboard --", e);
 
             // I might want to eventually catch right after toBlob() and do the above, then catch here to have a fallback of showing the image on screen for the user to save (or prompt to download).
+
+            createFailedCopyNotification();
+
+            // show failed copy overlay if the screenshot was successfully generated
+            if(screenshotBlob)
+            {
+                failedCopyImageHolder[0].src = window.URL.createObjectURL(screenshotBlob);
+
+
+                // shows the failed copy overlay
+
+                failedCopyOverlay.prop("hidden", false);
+                // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
+                $("body").css("overflow", "hidden");
+                // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
+                screenshotRegion.css("margin-right", "calc(100vw - 100%)");
+            }
         })
         .finally(() =>
         {
             $(createdBy).remove();
             isActivelyCopyingImage = false;
+
+            copyImageLoadingWheel.prop("hidden", true);
         });
 
 }
@@ -451,7 +491,10 @@ function copyAsTextListToClipboard()
         itemStrs.push(formatTextListItem(format, item));
 
     const textList = itemStrs.join(textListSeparatorRadios[textListSeparatorSelectedRadio].value);
-    navigator.clipboard.writeText(textList);
+    navigator.clipboard.writeText(textList)
+        .then(createSuccessfulCopyNotification)
+        //.catch(e => console.log(e));
+        .catch(console.log);
 }
 
 // maybe include Item somewhere in this function name
@@ -684,6 +727,11 @@ async function getAllItemNames()
 
 function updateFuzzyMatches()
 {
+    // don't want the list of matches popping up when the user is trying to select/deselect items
+    // also don't want to continue if the item names haven't been prepared yet; I could easily set a flag for this case and just call this function again when the prepared items are completely set up, but that would have an extra edge case of whether the name input is still focused (ultimately, the item names should get loaded and prepared quite quickly, so the user shouldn't really run into this in practice)
+    if(getIsInPriceCalculationMode() || !preparedItemNames)
+        return;
+
     const matches = fuzzysort.go(itemNameInput.val(), preparedItemNames, {limit: 10});
 
     const matchHTMLs = [];
@@ -691,8 +739,6 @@ function updateFuzzyMatches()
     for(let match of matches)
     {
         i++;
-
-        // matchHTMLs.push([match.target, fuzzysort.highlight(match)]);
 
         const div = document.createElement("div");
 
@@ -704,10 +750,8 @@ function updateFuzzyMatches()
             itemNameInput.val(event.data.itemName);
 
             // need to wait for the mouseup event in order to refocus/reselect the input field (using .one to make sure it only happens once, and using the document as the object to ensure this occurs no matter where on the screen the mouseup happens)
-            $(document).one("mouseup", () =>
-            {
-                itemNameInput.trigger("select")
-            });
+            // TODO -- I need to standardise all of my arrow functions; particularly, I need to decide whether to always include the () even for single parameter, and I need to determine whether it is a good idea to have arrow functions like this that are a single line (without {}) which calls a function (I don't know how "proper" this is, and it could easily lead to accidentally forgetting the () =>, causing it to misbehave)
+            $(document).one("mouseup", () => itemNameInput.trigger("select"));
         });
 
         const p = document.createElement("p");
@@ -722,5 +766,24 @@ function updateFuzzyMatches()
 
     fuzzyMatchesHolder.empty();
     fuzzyMatchesHolder[0].append(...matchHTMLs);
+}
+
+
+function createSuccessfulCopyNotification()
+{
+    let notification = document.createElement("p");
+    notification.innerText = "Successfully Copied!";
+    notification.classList.add("notification", "notificationSuccess");
+    $(notification).on("animationend", notification.remove);
+    document.body.appendChild(notification);
+}
+
+function createFailedCopyNotification()
+{
+    let notification = document.createElement("p");
+    notification.innerText = "Failed to Copy!";
+    notification.classList.add("notification", "notificationFail");
+    $(notification).on("animationend", notification.remove);
+    document.body.appendChild(notification);
 }
 

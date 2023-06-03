@@ -14,13 +14,33 @@ function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded)
     const abbreviationExpandedCell = document.createElement("td");
 
     const abbreviationInput = document.createElement("input");
-    $(abbreviationInput).on("change", handleAbbreviationChange);
+    const abbreviationInputSelector = $(abbreviationInput);
+    abbreviationInputSelector.on("change", handleAbbreviationChange);
     abbreviationInput.value = abbreviation;
     abbreviationInput.dataset.previousValue = abbreviation;
+
     const abbreviationExpandedInput = document.createElement("input");
-    $(abbreviationExpandedInput).on("change", handleAbbreviationChange);
+    const abbreviationExpandedInputSelector = $(abbreviationExpandedInput);
+    abbreviationExpandedInputSelector.on("change", handleAbbreviationChange);
     abbreviationExpandedInput.value = abbreviationExpanded;
     // abbreviationExpandedInput.dataset.previousValue = abbreviationExpanded;
+
+    // TODO -- important: not relevant here, but whenever the callback function for a jquery event returns false, this automatically causes event.stopPropagation() and event.preventDefault() to be called ( said in https://api.jquery.com/on/ and  https://stackoverflow.com/questions/2457246/jquery-click-function-exclude-children )
+
+    // make clicking the border/cell itself still focus the relevant input
+    // .target is where the event originated from/got triggered from, and .currentTarget is where the current event callback is attached to (so if the user clicks in the input field, the target is the input field, but the current target is the td, meaning I don't need to trigger focus: https://stackoverflow.com/questions/10086427/what-is-the-exact-difference-between-currenttarget-property-and-target-property )
+    $(abbreviationCell).on("click", (e) =>
+    {
+        // only need to focus if the cell is what was actually clicked on (target is what was clicked on [might be input or td], current target is what this callback is binded to [td])
+        if(e.target === e.currentTarget)
+            abbreviationInputSelector.trigger("focus");
+    });
+    $(abbreviationExpandedCell).on("click", (e) =>
+    {
+        // only need to focus if the cell is what was actually clicked on (target is what was clicked on [might be input or td], current target is what this callback is binded to [td])
+        if(e.target === e.currentTarget)
+            abbreviationExpandedInputSelector.trigger("focus");
+    });
 
 
     abbreviationCell.appendChild(abbreviationInput);

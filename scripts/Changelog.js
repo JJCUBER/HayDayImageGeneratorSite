@@ -1,4 +1,35 @@
 const changelog = new Map([
+    ["v2.3", `Features:
+- Added toggle to hide unselected items (when in price calculation mode)
+- Added a (green) notification when something got successfully copied (image/text of item list), coupled with a nice animation (more about the animation in UI Changes)
+- Added a (red) notification when something fails to get copied (same animation as ^)
+- Made clicking the small border around any of the inputs in the abbreviation mappings table (within settings) focus the input itself (in case you are unlucky enough to manage to click just outside of the input)
+- Added a loading wheel animation while in the process of generating and copying the image of the grid of items
+- Added an overlay which shows when the image is successfully generated but fails to copy to the clipboard (usually due to the page not having focus or the user being on a mobile device); this overlay presents the generated image, allowing the user to still copy/save it by right clicking/long-pressing (depending on what device they are using)
+
+UI Changes:
+- Disabled fuzzy search/matches popup while in price calculation mode (there wasn't any need for it to be popping up while selecting/deselecting items)
+- Animations and transitions GALORE (mentioned throughout the remaining bullet points)
+- Made notifications fade and slide in/out (they slide in/out from the top of the screen and stay there for a few seconds)
+- Added smooth transitions/animations to the outlines of items in the table/list, price/quantity labels, and more (primarily relating to the color of the outlines)
+- Improved the look of the outlines of elements (such as buttons and inputs)
+- Made all toggle-related buttons have a red outline while "activated" (only when they are not disabled; for example, if showing the equation for the total price is enabled, but price calculation mode is not currently active, the button for enabling the showing of the equation won't have a red outline)
+- Made overlays fade in when opened
+- Made price calculation mode's tooltip fade in when enabling said mode
+- Added some nice animations when modifying the item table in any way (adding items, removing items, editing items, resizing the table) to make it feel more "alive"/"responsive"
+- Animation when focusing any input field (of the background color turning yellow); this helps with seeing what got focused and/or whether something is focused
+- Added a little animation when clicking buttons (makes it feel more responsive and makes it clear that the button is actually being clicked)
+- Added transition when buttons change state between being enabled <-> disabled (fades in/out instead of instantly changing)
+- The entire total price calculation area fades in when enabled
+- Whenever a warning/error message appears in the price calculation area, it will fade in (if there wasn't previously a warning/error on screen)
+- Same as ^ for the equation for the total price
+- Reordered the price calculation area slightly to have the message at the very bottom instead of before the equation
+- Made the price calculation area's message transition/animate the change in color when going between warning <-> error
+- Made the item table not shift around slightly when opening/closing overlays (settings, changelog, etc.) in the (probably rare) case where you have bottom text long enough to wrap around
+- Made the items per row slider more vertically centered
+
+Misc:
+- Some code cleanup`],
     ["v2.2", `Features:
 - Added fuzzy searching/matching for item names, making it much easier and faster to input the name of a given item.  Fuzzy searching basically allows you to skip letters and even have them partially out of order, while still finding the "best" matches.  Give it a try, and you will see what I mean (it also shows visually what part of the matched terms it is "selecting").
 - In addition to clicking from the list of matches, you can input 1-9, 0 while typing a name to select that numbered match to fill in.

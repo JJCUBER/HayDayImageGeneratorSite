@@ -24,12 +24,15 @@ let bottomText, screenshotRegion;
 let settingsButton, settingsOverlay, hideSettingsButton, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput;
 let priceCalculationModeStateSpan;
 let disableInPriceCalculationModeElems, disableOutsidePriceCalculationModeElems;
-let equationVisibilityStateSpan;
+let equationVisibilityStateSpan, unselectedItemsVisibilityStateSpan;
+let shouldHideUnselectedItems;
 let totalPriceArea, totalPriceHolder, totalPriceMessageHolder, totalPriceEquationHolder;
 let coinImageUrl;
 let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
 let changelogButton, changelogOverlay, changelogInner, hideChangelogButton;
+let failedCopyOverlay, hideFailedCopyButton, failedCopyImageHolder;
+let copyImageLoadingWheel;
 
 let fuzzyMatchesHolder;
 
@@ -59,6 +62,7 @@ let abbreviationMapping = new Map([
 
 
 /* -------- scripts/Init.js -------- */
+// TODO -- it might be a good idea to create some class for overlays which include selectors for the overlay itself, the background, box, hideButton, and inner (all of which can be selected using $("BaseIdName .overlayClassName") ); this would also declutter the naming of all the basically repeated variables and all the selecting can be done within the class constructor (it also removes the need to have extra ids in the html)
 $(document).ready(() =>
 {
     itemsPerRowSlider = $("#itemsPerRowSlider");
@@ -88,6 +92,7 @@ $(document).ready(() =>
     disableOutsidePriceCalculationModeElems = $(".disableOutsidePriceCalculationMode");
 
     equationVisibilityStateSpan = $("#equationVisibilityStateSpan");
+    unselectedItemsVisibilityStateSpan = $("#unselectedItemsVisibilityStateSpan");
 
     totalPriceArea = $("#totalPriceArea");
     totalPriceHolder = $("#totalPriceHolder");
@@ -100,6 +105,12 @@ $(document).ready(() =>
     changelogOverlay = $("#changelogOverlay");
     changelogInner = $("#changelogInner");
     hideChangelogButton = $("#hideChangelogButton");
+
+    failedCopyOverlay = $("#failedCopyOverlay");
+    hideFailedCopyButton = $("#hideFailedCopyButton");
+    failedCopyImageHolder = $("#failedCopyImageHolder");
+
+    copyImageLoadingWheel = $("#copyImageLoadingWheel");
 
     fuzzyMatchesHolder = $("#fuzzyMatchesHolder");
 
@@ -115,7 +126,6 @@ $(document).ready(() =>
 
 
     itemNameInput.on("focus", updateFuzzyMatches);
-    // itemNameInput.on("blur", clearFuzzyMatches);
     itemNameInput.on("blur", () =>
     {
         fuzzyMatchesHolder.empty();
@@ -152,6 +162,7 @@ $(document).ready(() =>
 
     $("#copyImageToClipboardButton").on("click", copyImageToClipboard);
 
+    // TODO -- all of this event stuff seems to be identical for both the settings and changelog popups (and probably for potential future ones as well); I should probably turn at least part of this into some function with parameters for the corresponding jquery objects/selectors (for show button, hide button, background, etc.)
 
     // TODO -- I might want to eventually move this css stuff to a class, then use classList to add/remove these classes from the respective elements?  https://developer.mozilla.org/en-US/docs/Web/API/Element/classList
     settingsButton.on("click", () =>
@@ -159,11 +170,14 @@ $(document).ready(() =>
         settingsOverlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         $("body").css("overflow", "hidden");
+        // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
+        screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
     hideSettingsButton.on("click", () =>
     {
         settingsOverlay.prop("hidden", true);
         $("body").css("overflow", "visible");
+        screenshotRegion.css("margin-right", "unset");
     });
     $("#settingsBackground").on("click", () =>
     {
@@ -339,6 +353,10 @@ $(document).ready(() =>
         setSelectedStateAll(items.values(), cells, true);
 
         updateTotalPrice();
+
+        // need to update what items are and aren't visible now that all items have been selected (even previously hidden ones)
+        if(shouldHideUnselectedItems)
+            updateItemLayout();
     });
 
     $("#clearSelectionButton").on("click", () =>
@@ -347,6 +365,10 @@ $(document).ready(() =>
         setSelectedStateAll(items.values(), cells, false);
 
         updateTotalPrice();
+
+        // need to update what items are and aren't visible now that all items have been deselected (even previously visible ones)
+        if(shouldHideUnselectedItems)
+            updateItemLayout();
     });
 
     $("#subtractSelectedQuantitiesButton").on("click", () =>
@@ -404,6 +426,27 @@ $(document).ready(() =>
 
         equationVisibilityStateSpan.text(wasHidden ? "Hide" : "Show");
         totalPriceEquationHolder.prop("hidden", !wasHidden);
+
+        const toggleButton = event.currentTarget;
+        if(wasHidden)
+            toggleButton.classList.add("selected");
+        else
+            toggleButton.classList.remove("selected");
+    });
+
+    $("#unselectedItemsVisibilityToggleButton").on("click", () =>
+    {
+        const wasHidden = shouldHideUnselectedItems;
+        unselectedItemsVisibilityStateSpan.text(wasHidden ? "Hide" : "Show");
+
+        const toggleButton = event.currentTarget;
+        if(wasHidden)
+            toggleButton.classList.remove("selected");
+        else
+            toggleButton.classList.add("selected");
+
+        shouldHideUnselectedItems = !shouldHideUnselectedItems;
+        updateItemLayout();
     });
 
 
@@ -416,11 +459,14 @@ $(document).ready(() =>
         changelogOverlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         $("body").css("overflow", "hidden");
+        // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
+        screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
     hideChangelogButton.on("click", () =>
     {
         changelogOverlay.prop("hidden", true);
         $("body").css("overflow", "visible");
+        screenshotRegion.css("margin-right", "unset");
     });
     $("#changelogBackground").on("click", () =>
     {
@@ -428,6 +474,20 @@ $(document).ready(() =>
     });
 
     handleVersionChange();
+
+
+
+    hideFailedCopyButton.on("click", () =>
+    {
+        failedCopyOverlay.prop("hidden", true);
+        $("body").css("overflow", "visible");
+        screenshotRegion.css("margin-right", "unset");
+    });
+    $("#failedCopyBackground").on("click", () =>
+    {
+        hideFailedCopyButton.trigger("click");
+    });
+
 
 
     prepareAllItemNames().then(prepared =>
@@ -696,13 +756,24 @@ function updateItemLayout()
     if(!items.size)
         return;
 
-    const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
-
-    const itemCt = itemsSortedDescending.length;
-    let rowCt = Math.ceil(itemCt / itemsPerRow);
 
     const shouldShowSelection = getIsInPriceCalculationMode();
     previousSelection = undefined;
+
+    let itemsUnsorted = [...items.values()];
+    // filter out unselected if the user wants them hidden
+    if(shouldShowSelection && shouldHideUnselectedItems)
+    {
+        itemsUnsorted = itemsUnsorted.filter(item => item.isSelected);
+
+        // nothing to show (since all of the items got filtered out), so we are done (also don't need to worry about updating the total price, since it always gets updated after clicking on any item's cell)
+        if(!itemsUnsorted.length)
+            return;
+    }
+    const itemsSortedDescending = itemsUnsorted.sort((item1, item2) => item2.quantity - item1.quantity);
+
+    const itemCt = itemsSortedDescending.length;
+    let rowCt = Math.ceil(itemCt / itemsPerRow);
 
     let i = 0;
     while(rowCt--)
@@ -775,6 +846,12 @@ function updateItemLayout()
             $(image).on("click", () =>
             {
                 itemNameInput.trigger("select");
+
+                // need to update the layout to not include items that just got deselected; I am only putting this in the event handler for clicking on the image itself, since I want the user to be able to modify price/mult and quantity without the item temporarily disappearing
+                // this does cause the problem of clicking the border of the cell toggling the item, but not hiding it when the user wants them hidden (since this event only listens for clicking on the image itself, not anywhere in the cell)
+                // TODO -- I'm wondering if I should make clicking on quantity/price not change the state of the selection in general, though that  could be a bit annoying if the user is trying to quickly select items.
+                if(shouldHideUnselectedItems)
+                    updateItemLayout();
             });
 
             const quantityLabel = document.createElement("p");
@@ -864,19 +941,42 @@ function copyImageToClipboard()
     createdBy.style.fontWeight = "900";
     screenshotRegion.append(createdBy);
 
+    copyImageLoadingWheel.prop("hidden", false);
+
+    let screenshotBlob;
     htmlToImage.toBlob(screenshotRegion[0])
-        .then(blob => new ClipboardItem({"image/png": blob}))
+        .then(blob => new ClipboardItem({"image/png": screenshotBlob = blob})) // also stores the blob in case the error is caught later
         .then(clipboardItem => navigator.clipboard.write([clipboardItem]))
+        .then(createSuccessfulCopyNotification)
         .catch(e =>
         {
             console.log("Unable to generate image and/or copy it to clipboard --", e);
 
             // I might want to eventually catch right after toBlob() and do the above, then catch here to have a fallback of showing the image on screen for the user to save (or prompt to download).
+
+            createFailedCopyNotification();
+
+            // show failed copy overlay if the screenshot was successfully generated
+            if(screenshotBlob)
+            {
+                failedCopyImageHolder[0].src = window.URL.createObjectURL(screenshotBlob);
+
+
+                // shows the failed copy overlay
+
+                failedCopyOverlay.prop("hidden", false);
+                // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
+                $("body").css("overflow", "hidden");
+                // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
+                screenshotRegion.css("margin-right", "calc(100vw - 100%)");
+            }
         })
         .finally(() =>
         {
             $(createdBy).remove();
             isActivelyCopyingImage = false;
+
+            copyImageLoadingWheel.prop("hidden", true);
         });
 
 }
@@ -891,7 +991,10 @@ function copyAsTextListToClipboard()
         itemStrs.push(formatTextListItem(format, item));
 
     const textList = itemStrs.join(textListSeparatorRadios[textListSeparatorSelectedRadio].value);
-    navigator.clipboard.writeText(textList);
+    navigator.clipboard.writeText(textList)
+        .then(createSuccessfulCopyNotification)
+        //.catch(e => console.log(e));
+        .catch(console.log);
 }
 
 // maybe include Item somewhere in this function name
@@ -1124,6 +1227,11 @@ async function getAllItemNames()
 
 function updateFuzzyMatches()
 {
+    // don't want the list of matches popping up when the user is trying to select/deselect items
+    // also don't want to continue if the item names haven't been prepared yet; I could easily set a flag for this case and just call this function again when the prepared items are completely set up, but that would have an extra edge case of whether the name input is still focused (ultimately, the item names should get loaded and prepared quite quickly, so the user shouldn't really run into this in practice)
+    if(getIsInPriceCalculationMode() || !preparedItemNames)
+        return;
+
     const matches = fuzzysort.go(itemNameInput.val(), preparedItemNames, {limit: 10});
 
     const matchHTMLs = [];
@@ -1131,8 +1239,6 @@ function updateFuzzyMatches()
     for(let match of matches)
     {
         i++;
-
-        // matchHTMLs.push([match.target, fuzzysort.highlight(match)]);
 
         const div = document.createElement("div");
 
@@ -1144,10 +1250,8 @@ function updateFuzzyMatches()
             itemNameInput.val(event.data.itemName);
 
             // need to wait for the mouseup event in order to refocus/reselect the input field (using .one to make sure it only happens once, and using the document as the object to ensure this occurs no matter where on the screen the mouseup happens)
-            $(document).one("mouseup", () =>
-            {
-                itemNameInput.trigger("select")
-            });
+            // TODO -- I need to standardise all of my arrow functions; particularly, I need to decide whether to always include the () even for single parameter, and I need to determine whether it is a good idea to have arrow functions like this that are a single line (without {}) which calls a function (I don't know how "proper" this is, and it could easily lead to accidentally forgetting the () =>, causing it to misbehave)
+            $(document).one("mouseup", () => itemNameInput.trigger("select"));
         });
 
         const p = document.createElement("p");
@@ -1162,6 +1266,25 @@ function updateFuzzyMatches()
 
     fuzzyMatchesHolder.empty();
     fuzzyMatchesHolder[0].append(...matchHTMLs);
+}
+
+
+function createSuccessfulCopyNotification()
+{
+    let notification = document.createElement("p");
+    notification.innerText = "Successfully Copied!";
+    notification.classList.add("notification", "notificationSuccess");
+    $(notification).on("animationend", notification.remove);
+    document.body.appendChild(notification);
+}
+
+function createFailedCopyNotification()
+{
+    let notification = document.createElement("p");
+    notification.innerText = "Failed to Copy!";
+    notification.classList.add("notification", "notificationFail");
+    $(notification).on("animationend", notification.remove);
+    document.body.appendChild(notification);
 }
 
 
@@ -1182,13 +1305,33 @@ function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded)
     const abbreviationExpandedCell = document.createElement("td");
 
     const abbreviationInput = document.createElement("input");
-    $(abbreviationInput).on("change", handleAbbreviationChange);
+    const abbreviationInputSelector = $(abbreviationInput);
+    abbreviationInputSelector.on("change", handleAbbreviationChange);
     abbreviationInput.value = abbreviation;
     abbreviationInput.dataset.previousValue = abbreviation;
+
     const abbreviationExpandedInput = document.createElement("input");
-    $(abbreviationExpandedInput).on("change", handleAbbreviationChange);
+    const abbreviationExpandedInputSelector = $(abbreviationExpandedInput);
+    abbreviationExpandedInputSelector.on("change", handleAbbreviationChange);
     abbreviationExpandedInput.value = abbreviationExpanded;
     // abbreviationExpandedInput.dataset.previousValue = abbreviationExpanded;
+
+    // TODO -- important: not relevant here, but whenever the callback function for a jquery event returns false, this automatically causes event.stopPropagation() and event.preventDefault() to be called ( said in https://api.jquery.com/on/ and  https://stackoverflow.com/questions/2457246/jquery-click-function-exclude-children )
+
+    // make clicking the border/cell itself still focus the relevant input
+    // .target is where the event originated from/got triggered from, and .currentTarget is where the current event callback is attached to (so if the user clicks in the input field, the target is the input field, but the current target is the td, meaning I don't need to trigger focus: https://stackoverflow.com/questions/10086427/what-is-the-exact-difference-between-currenttarget-property-and-target-property )
+    $(abbreviationCell).on("click", (e) =>
+    {
+        // only need to focus if the cell is what was actually clicked on (target is what was clicked on [might be input or td], current target is what this callback is binded to [td])
+        if(e.target === e.currentTarget)
+            abbreviationInputSelector.trigger("focus");
+    });
+    $(abbreviationExpandedCell).on("click", (e) =>
+    {
+        // only need to focus if the cell is what was actually clicked on (target is what was clicked on [might be input or td], current target is what this callback is binded to [td])
+        if(e.target === e.currentTarget)
+            abbreviationExpandedInputSelector.trigger("focus");
+    });
 
 
     abbreviationCell.appendChild(abbreviationInput);
@@ -1317,6 +1460,37 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.3", `Features:
+- Added toggle to hide unselected items (when in price calculation mode)
+- Added a (green) notification when something got successfully copied (image/text of item list), coupled with a nice animation (more about the animation in UI Changes)
+- Added a (red) notification when something fails to get copied (same animation as ^)
+- Made clicking the small border around any of the inputs in the abbreviation mappings table (within settings) focus the input itself (in case you are unlucky enough to manage to click just outside of the input)
+- Added a loading wheel animation while in the process of generating and copying the image of the grid of items
+- Added an overlay which shows when the image is successfully generated but fails to copy to the clipboard (usually due to the page not having focus or the user being on a mobile device); this overlay presents the generated image, allowing the user to still copy/save it by right clicking/long-pressing (depending on what device they are using)
+
+UI Changes:
+- Disabled fuzzy search/matches popup while in price calculation mode (there wasn't any need for it to be popping up while selecting/deselecting items)
+- Animations and transitions GALORE (mentioned throughout the remaining bullet points)
+- Made notifications fade and slide in/out (they slide in/out from the top of the screen and stay there for a few seconds)
+- Added smooth transitions/animations to the outlines of items in the table/list, price/quantity labels, and more (primarily relating to the color of the outlines)
+- Improved the look of the outlines of elements (such as buttons and inputs)
+- Made all toggle-related buttons have a red outline while "activated" (only when they are not disabled; for example, if showing the equation for the total price is enabled, but price calculation mode is not currently active, the button for enabling the showing of the equation won't have a red outline)
+- Made overlays fade in when opened
+- Made price calculation mode's tooltip fade in when enabling said mode
+- Added some nice animations when modifying the item table in any way (adding items, removing items, editing items, resizing the table) to make it feel more "alive"/"responsive"
+- Animation when focusing any input field (of the background color turning yellow); this helps with seeing what got focused and/or whether something is focused
+- Added a little animation when clicking buttons (makes it feel more responsive and makes it clear that the button is actually being clicked)
+- Added transition when buttons change state between being enabled <-> disabled (fades in/out instead of instantly changing)
+- The entire total price calculation area fades in when enabled
+- Whenever a warning/error message appears in the price calculation area, it will fade in (if there wasn't previously a warning/error on screen)
+- Same as ^ for the equation for the total price
+- Reordered the price calculation area slightly to have the message at the very bottom instead of before the equation
+- Made the price calculation area's message transition/animate the change in color when going between warning <-> error
+- Made the item table not shift around slightly when opening/closing overlays (settings, changelog, etc.) in the (probably rare) case where you have bottom text long enough to wrap around
+- Made the items per row slider more vertically centered
+
+Misc:
+- Some code cleanup`],
     ["v2.2", `Features:
 - Added fuzzy searching/matching for item names, making it much easier and faster to input the name of a given item.  Fuzzy searching basically allows you to skip letters and even have them partially out of order, while still finding the "best" matches.  Give it a try, and you will see what I mean (it also shows visually what part of the matched terms it is "selecting").
 - In addition to clicking from the list of matches, you can input 1-9, 0 while typing a name to select that numbered match to fill in.

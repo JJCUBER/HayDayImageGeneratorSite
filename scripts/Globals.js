@@ -6,12 +6,15 @@ let bottomText, screenshotRegion;
 let settingsButton, settingsOverlay, hideSettingsButton, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput;
 let priceCalculationModeStateSpan;
 let disableInPriceCalculationModeElems, disableOutsidePriceCalculationModeElems;
-let equationVisibilityStateSpan;
+let equationVisibilityStateSpan, unselectedItemsVisibilityStateSpan;
+let shouldHideUnselectedItems;
 let totalPriceArea, totalPriceHolder, totalPriceMessageHolder, totalPriceEquationHolder;
 let coinImageUrl;
 let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
 let changelogButton, changelogOverlay, changelogInner, hideChangelogButton;
+let failedCopyOverlay, hideFailedCopyButton, failedCopyImageHolder;
+let copyImageLoadingWheel;
 
 let fuzzyMatchesHolder;
 

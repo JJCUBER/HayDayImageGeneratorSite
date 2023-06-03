@@ -17,16 +17,16 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js" integrity="sha512-sdAWRZSPnL/EbXixTyBhffFggsxlPrxEMLKvseTBMfY3MGxYvXvm83S/WddNpx1tXPylK5warEPp7uu1yiNsgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=2.2">
+        <link rel="stylesheet" href="style.css?v=2.3">
 
 
-        <script src="script.js?v=2.2"></script>
+        <script src="script.js?v=2.3"></script>
     </head>
     <body>
         <h2>Options</h2>
 
         <label for="itemsPerRowSlider">Items Per Row</label>
-        <input type="range" min="1" max="12" id="itemsPerRowSlider">
+        <input type="range" min="1" max="12" id="itemsPerRowSlider" style="vertical-align: sub;"> <!-- seems to align slightly better than "vertical-align: middle" -->
         <label id="itemsPerRowLabel">8</label>
 
         <button id="settingsButton" style="margin-left: 20px;">Settings</button>
@@ -60,6 +60,7 @@
         <button id="clearAllButton" class="disableInPriceCalculationMode">Clear All</button>
         <button id="copyImageToClipboardButton">Copy Image to Clipboard</button>
         <button id="copyAsTextListButton">Copy as Text List</button>
+        <div id="copyImageLoadingWheel" class="loading" hidden></div>
         <br>
         <div style="height: 10px;"></div>
         <button id="priceCalculationToggleButton"><span id="priceCalculationModeStateSpan">Enable</span> Price Calculation Mode</button>
@@ -71,14 +72,15 @@
         <div style="height: 10px;"></div>
         <button id="resetCustomValuesButton" class="disableOutsidePriceCalculationMode">Reset Custom Values</button>
         <button id="equationVisibilityToggleButton" class="disableOutsidePriceCalculationMode"><span id="equationVisibilityStateSpan">Show</span> Equation</button>
+        <button id="unselectedItemsVisibilityToggleButton" class="disableOutsidePriceCalculationMode"><span id="unselectedItemsVisibilityStateSpan">Hide</span> Unselected</button>
 
         <div style="height: 15px;"></div>
         <hr>
         <div id="totalPriceArea" hidden>
             <h2>Total Selected Price</h2>
             <p id="totalPriceHolder"></p>
-            <p id="totalPriceMessageHolder" hidden></p>
             <p id="totalPriceEquationHolder" hidden></p>
+            <p id="totalPriceMessageHolder" hidden></p>
             <hr>
         </div>
         <small>You can click on any item's image, quantity, or price to autofill all their information and focus the corresponding text box!  (This includes the bottom text.)</small>
@@ -92,12 +94,12 @@
             <p id="bottomText"></p>
         </div>
 
-        <div id="settingsOverlay" hidden>
-            <div id="settingsBackground"></div>
-            <div id="settingsBox">
-                <button id="hideSettingsButton">X</button>
-                <div id="settingsInner">
-                    <div style="height: 10px;"></div>
+        <div id="settingsOverlay" class="overlay" hidden>
+            <div id="settingsBackground" class="overlayBackground"></div>
+            <div id="settingsBox" class="overlayBox">
+                <button id="hideSettingsButton" class="overlayHideButton">X</button>
+                <div id="settingsInner" class="overlayInner">
+                    <!-- <div style="height: 10px;"></div> -->
                     <h2>
                         Item Abbreviations
                         <br>
@@ -146,11 +148,36 @@
             </div>
         </div>
 
-        <div id="changelogOverlay" hidden>
-            <div id="changelogBackground"></div>
-            <div id="changelogBox">
-                <button id="hideChangelogButton">X</button>
-                <div id="changelogInner"></div>
+        <div id="changelogOverlay" class="overlay" hidden>
+            <div id="changelogBackground" class="overlayBackground"></div>
+            <div id="changelogBox" class="overlayBox">
+                <button id="hideChangelogButton" class="overlayHideButton">X</button>
+                <div id="changelogInner" class="overlayInner"></div>
+            </div>
+        </div>
+
+        <div id="failedCopyOverlay" class="overlay" hidden>
+            <div id="failedCopyBackground" class="overlayBackground"></div>
+            <div id="failedCopyBox" class="overlayBox">
+                <button id="hideFailedCopyButton" class="overlayHideButton">X</button>
+                <div id="failedCopyInner" class="overlayInner">
+                    <h2>Copy Failed</h2>
+
+                    <!-- TODO -- need to make this look better... it's disgusting rn -->
+                    <p>
+                        It looks like there was an issue with copying the image to the clipboard.
+                        <br>
+                        This is usually due to:
+                        <br>
+                        1) clicking out of the site while the image is being copied, or 2) using a mobile device.
+                        <br>
+                        Below is the image that was generated (right click/long-press the image to copy/save it)
+                    </p>
+
+                    <hr>
+
+                    <img id="failedCopyImageHolder">
+                </div>
             </div>
         </div>
     </body>

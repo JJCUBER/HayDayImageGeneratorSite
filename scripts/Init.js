@@ -1,3 +1,4 @@
+// TODO -- it might be a good idea to create some class for overlays which include selectors for the overlay itself, the background, box, hideButton, and inner (all of which can be selected using $("BaseIdName .overlayClassName") ); this would also declutter the naming of all the basically repeated variables and all the selecting can be done within the class constructor (it also removes the need to have extra ids in the html)
 $(document).ready(() =>
 {
     itemsPerRowSlider = $("#itemsPerRowSlider");
@@ -27,6 +28,7 @@ $(document).ready(() =>
     disableOutsidePriceCalculationModeElems = $(".disableOutsidePriceCalculationMode");
 
     equationVisibilityStateSpan = $("#equationVisibilityStateSpan");
+    unselectedItemsVisibilityStateSpan = $("#unselectedItemsVisibilityStateSpan");
 
     totalPriceArea = $("#totalPriceArea");
     totalPriceHolder = $("#totalPriceHolder");
@@ -39,6 +41,12 @@ $(document).ready(() =>
     changelogOverlay = $("#changelogOverlay");
     changelogInner = $("#changelogInner");
     hideChangelogButton = $("#hideChangelogButton");
+
+    failedCopyOverlay = $("#failedCopyOverlay");
+    hideFailedCopyButton = $("#hideFailedCopyButton");
+    failedCopyImageHolder = $("#failedCopyImageHolder");
+
+    copyImageLoadingWheel = $("#copyImageLoadingWheel");
 
     fuzzyMatchesHolder = $("#fuzzyMatchesHolder");
 
@@ -54,7 +62,6 @@ $(document).ready(() =>
 
 
     itemNameInput.on("focus", updateFuzzyMatches);
-    // itemNameInput.on("blur", clearFuzzyMatches);
     itemNameInput.on("blur", () =>
     {
         fuzzyMatchesHolder.empty();
@@ -91,6 +98,7 @@ $(document).ready(() =>
 
     $("#copyImageToClipboardButton").on("click", copyImageToClipboard);
 
+    // TODO -- all of this event stuff seems to be identical for both the settings and changelog popups (and probably for potential future ones as well); I should probably turn at least part of this into some function with parameters for the corresponding jquery objects/selectors (for show button, hide button, background, etc.)
 
     // TODO -- I might want to eventually move this css stuff to a class, then use classList to add/remove these classes from the respective elements?  https://developer.mozilla.org/en-US/docs/Web/API/Element/classList
     settingsButton.on("click", () =>
@@ -98,11 +106,14 @@ $(document).ready(() =>
         settingsOverlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         $("body").css("overflow", "hidden");
+        // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
+        screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
     hideSettingsButton.on("click", () =>
     {
         settingsOverlay.prop("hidden", true);
         $("body").css("overflow", "visible");
+        screenshotRegion.css("margin-right", "unset");
     });
     $("#settingsBackground").on("click", () =>
     {
@@ -278,6 +289,10 @@ $(document).ready(() =>
         setSelectedStateAll(items.values(), cells, true);
 
         updateTotalPrice();
+
+        // need to update what items are and aren't visible now that all items have been selected (even previously hidden ones)
+        if(shouldHideUnselectedItems)
+            updateItemLayout();
     });
 
     $("#clearSelectionButton").on("click", () =>
@@ -286,6 +301,10 @@ $(document).ready(() =>
         setSelectedStateAll(items.values(), cells, false);
 
         updateTotalPrice();
+
+        // need to update what items are and aren't visible now that all items have been deselected (even previously visible ones)
+        if(shouldHideUnselectedItems)
+            updateItemLayout();
     });
 
     $("#subtractSelectedQuantitiesButton").on("click", () =>
@@ -343,6 +362,27 @@ $(document).ready(() =>
 
         equationVisibilityStateSpan.text(wasHidden ? "Hide" : "Show");
         totalPriceEquationHolder.prop("hidden", !wasHidden);
+
+        const toggleButton = event.currentTarget;
+        if(wasHidden)
+            toggleButton.classList.add("selected");
+        else
+            toggleButton.classList.remove("selected");
+    });
+
+    $("#unselectedItemsVisibilityToggleButton").on("click", () =>
+    {
+        const wasHidden = shouldHideUnselectedItems;
+        unselectedItemsVisibilityStateSpan.text(wasHidden ? "Hide" : "Show");
+
+        const toggleButton = event.currentTarget;
+        if(wasHidden)
+            toggleButton.classList.remove("selected");
+        else
+            toggleButton.classList.add("selected");
+
+        shouldHideUnselectedItems = !shouldHideUnselectedItems;
+        updateItemLayout();
     });
 
 
@@ -355,11 +395,14 @@ $(document).ready(() =>
         changelogOverlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         $("body").css("overflow", "hidden");
+        // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
+        screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
     hideChangelogButton.on("click", () =>
     {
         changelogOverlay.prop("hidden", true);
         $("body").css("overflow", "visible");
+        screenshotRegion.css("margin-right", "unset");
     });
     $("#changelogBackground").on("click", () =>
     {
@@ -367,6 +410,20 @@ $(document).ready(() =>
     });
 
     handleVersionChange();
+
+
+
+    hideFailedCopyButton.on("click", () =>
+    {
+        failedCopyOverlay.prop("hidden", true);
+        $("body").css("overflow", "visible");
+        screenshotRegion.css("margin-right", "unset");
+    });
+    $("#failedCopyBackground").on("click", () =>
+    {
+        hideFailedCopyButton.trigger("click");
+    });
+
 
 
     prepareAllItemNames().then(prepared =>

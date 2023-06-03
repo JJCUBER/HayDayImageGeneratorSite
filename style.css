@@ -63,6 +63,7 @@ button + button
     color: white;
 
     -webkit-text-stroke: 2px black;
+    transition: -webkit-text-stroke 0.2s;
 }
 .quantityLabel:hover, .customQuantityLabel:hover
 {
@@ -79,18 +80,22 @@ button + button
     color: white;
 
     -webkit-text-stroke: 2px red;
+    transition: -webkit-text-stroke 0.2s;
 }
 
 .priceLabel
 {
     position: absolute;
-    -webkit-transform: translate(0%,-100%);
+    transform: translate(0%, -100%);
     top: 2px;
     left: 2px;
 
     font-size: 30px;
     font-weight: bold;
     color: black;
+    /* must do it like this, since the transition doesn't work for width of the stroke */
+    -webkit-text-stroke: 2px #0000;
+    transition: -webkit-text-stroke 0.2s;
     --coin-stroke-color: #0004;
 }
 .priceLabel:hover, .customPriceLabel:hover
@@ -101,7 +106,7 @@ button + button
 .customPriceLabel
 {
     position: absolute;
-    -webkit-transform: translate(0%,-100%);
+    transform: translate(0%, -100%);
     top: 2px;
     right: 2px;
 
@@ -109,6 +114,7 @@ button + button
     font-weight: bold;
     color: yellow;
     -webkit-text-stroke: 2px red;
+    transition: -webkit-text-stroke 0.2s;
     --coin-stroke-color: #0004;
 }
 
@@ -135,12 +141,31 @@ button + button
         drop-shadow(var(--stroke-pos) var(--stroke-neg) 0 var(--coin-stroke-color))
         drop-shadow(var(--stroke-neg) var(--stroke-pos) 0 var(--coin-stroke-color))
         drop-shadow(var(--stroke-neg) var(--stroke-neg) 0 var(--coin-stroke-color));
+    transition: filter 0.2s;
 }
 
 td
 {
     border: 3px solid;
     border-color: #0002;
+    transition: border-color 0.2s;
+
+    animation: grow 0.3s;
+}
+
+@keyframes grow
+{
+    from
+    {
+        transform: scale(0.8);
+        opacity: 0.8;
+        border-radius: 50px;
+    }
+    to
+    {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 td:hover
@@ -163,12 +188,13 @@ td.selected:hover
 }
 
 
-#settingsOverlay
+/* shouldn't be a class, since not all overlays should have this */
+#settingsOverlay, #failedCopyOverlay
 {
     text-align: center;
 }
 
-#settingsBackground, #changelogBackground
+.overlayBackground
 {
     position: fixed;
     top: 0%;
@@ -179,11 +205,11 @@ td.selected:hover
     background-color: #000a;
 }
 
-#settingsBox, #changelogBox
+.overlayBox
 {
     position: fixed;
-    top:50%;
-    left:50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50.00005%, -50%); /* the ever-so-slight offset is done since the left side of the outline of the textboxes gets weird (maybe that's only for my computer at 100%, I don't know.) */
 
     max-height: 80%;
@@ -196,12 +222,13 @@ td.selected:hover
     border-radius: 5px;
 }
 
-#settingsInner, #changelogInner
+.overlayInner
 {
     margin: 10px;
 }
 
-#hideSettingsButton, #hideChangelogButton
+/* technically, the name hideOverlayButton would better match how I named the id's, but I wanted to stay consistent with my naming of the css classes, as overlay is the more general/"parent" component */
+.overlayHideButton
 {
     position: absolute;
     top: 10px;
@@ -217,17 +244,65 @@ td.selected:hover
 }
 
 
-.selected, .invalid
+button, input, textarea
+{
+    border-style: solid;
+    /* outright specifying this seems to mess with the alignment of the items per row slider for some reason?  The default seems to be ~2px. */
+    /* border-width: 2px; */
+}
+
+input, textarea
+{
+    transition: background-color 0.3s;
+}
+
+:is(input, textarea):focus
+{
+    background-color: #ff05;
+}
+
+/* need to use not disabled instead of enabled because some items which get selected don't have an enabled/disabled state (i.e. normal cells); said items should still properly show as selected */
+.selected:not(:disabled), .invalid
 {
     border-style: solid;
     border-color: red;
     outline: none; /* prevents black outline of focused input, along with when shift is pressed when a button is "focused" */
 }
 
+/* the second entry in :is makes every element inside totalPriceArea fade in (it also makes images inside the p tag not fade in each time they are loaded, but it does fade in with the p tag itself the first time which is what I want; the :not:empty is to make sure the equation fades in whenever it is populated, since it can be "visible" while still empty, causing it to otherwise instantly appear when populated) */
+:is(.overlay, #totalPriceArea :not(img, :empty), #priceCalculationModeSelectionInfo)
+{
+    animation: fadeIn 0.3s forwards;
+}
+
+@keyframes fadeIn
+{
+    from
+    {
+        opacity: 0;
+    }
+    to
+    {
+        opacity: 1;
+    }
+}
+
+button
+{
+    transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+button:active
+{
+    transform: scale(0.98);
+}
+
 #totalPriceMessageHolder
 {
     font-weight: bold;
     /*-webkit-text-stroke: 0.5px #000a;*/
+
+    transition: color 0.2s;
 }
 
 #fuzzyMatchesHolder
@@ -241,7 +316,10 @@ td.selected:hover
 {
     width: 100%;
     background-color: grey;
-    border-color: grey;
+    /* border-color: grey; */
+    border-style: solid;
+    border-width: 1px;
+    border-color: dimgrey;
     color: white;
 }
 
@@ -264,5 +342,88 @@ td.selected:hover
     font-weight: bold;
 
     color: lime;
+}
+
+
+.notification
+{
+    /* absolute and fixed do the same thing (makes the element not take up space in the "flow" of the document), except absolute uses position offsets relative to the parent, whereas fixed does not; fixed is relative to the initial viewport: https://developer.mozilla.org/en-US/docs/Web/CSS/position */
+    /*position; absolute;*/
+    position: fixed;
+    left: 50%;
+    top: 0;
+
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 5px;
+    padding: 10px;
+
+    animation: slideFade 5s forwards; /* maintain end state: https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode */
+}
+
+.notificationSuccess
+{
+    background-color: #d1ffbd;
+    border-color: #2e990055;
+}
+
+.notificationFail
+{
+    background-color: #ffc8c8;
+    border-color: #db2f2355;
+}
+
+@keyframes slideFade
+{
+    /* multiple keyframes can have the same settings, and keyframes don't have to be specified in order ( https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes ) */
+    from, to
+    {
+        /* need to be using opacity so that the entire element fades in/out */
+        opacity: 0;
+        transform: translate(-50%, -100%);
+    }
+    20%, 80%
+    {
+        opacity: 1;
+        transform: translate(-50%, 10%);
+    }
+}
+
+
+/* I could alternatively have a special class for whether this is actively loading or not (or just add/remove the .loading class), but I feel like the use of hidden better aligns with the rest of my code elsewhere */
+.loading:not([hidden])
+{
+    display: inline-block;
+    vertical-align: middle;
+
+    margin-left: 10px;
+    margin-right: 10px;
+
+    width: 12px;
+    height: 12px;
+
+    border-style: solid;
+    border-width: 3px;
+    border-radius: 100%;
+    border-color: blue blue blue transparent;
+
+    animation: spin 2.5s linear infinite;
+}
+
+@keyframes spin
+{
+    from
+    {
+        transform: rotate(0deg);
+    }
+    50%
+    {
+        transform: rotate(360deg) scale(0.8);
+        border-color: lightblue lightblue lightblue transparent;
+    }
+    to
+    {
+        transform: rotate(720deg);
+    }
 }
 
