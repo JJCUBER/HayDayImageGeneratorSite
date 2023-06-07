@@ -125,21 +125,35 @@ td.selected:hover
 
     color: white;
 
-    --labelOutlineColor: black; /* default */
-    text-shadow:
-    /* shadow */
-         0px  0px 10px var(--labelOutlineColor),
+    /* TODO -- I might want to switch over to the non-legacy format of "r g b / a", instead of "r, g, b, a" ( https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/rgb ) */
+    --labelOutlineColor: 0, 0, 0; /* default */
+    /* IMPORTANT -- MUST use rgb comma list for the variable when specifying colors, not color names! */
+    filter:
+        drop-shadow(0 0 1px rgb(var(--labelOutlineColor), 0.8))
+        drop-shadow(0 0 1px rgb(var(--labelOutlineColor), 0.8))
+        drop-shadow(0 0 5px rgb(var(--labelOutlineColor), 0.8));
+    transition: filter 0.2s;
 
-    /* outline */
-        -1px -1px  0px var(--labelOutlineColor),
-         0px -1px  0px var(--labelOutlineColor),
-         1px -1px  0px var(--labelOutlineColor),
-         1px  0px  0px var(--labelOutlineColor),
-         1px  1px  0px var(--labelOutlineColor),
-         0px  1px  0px var(--labelOutlineColor),
-        -1px  1px  0px var(--labelOutlineColor),
-        -1px  0px  0px var(--labelOutlineColor);
-    transition: text-shadow 0.2s;
+    /* TODO -- try to improve the sharpness of the text "outline" with something like this (this seems to be too thick, and the positioning gets messed up when zooming in on the page) */
+    /* filter: */
+    /*     drop-shadow(0 0 5px rgb(var(--labelOutlineColor), 0.2)) */
+
+    /*     drop-shadow(-1px -1px  0px rgb(var(--labelOutlineColor), 0.3)) */
+    /*     drop-shadow( 0px -1px  0px rgb(var(--labelOutlineColor), 0.3)) */
+    /*     drop-shadow( 1px -1px  0px rgb(var(--labelOutlineColor), 0.3)) */
+    /*     drop-shadow( 1px  0px  0px rgb(var(--labelOutlineColor), 0.3)) */
+    /*     drop-shadow( 1px  1px  0px rgb(var(--labelOutlineColor), 0.3)) */
+    /*     drop-shadow( 0px  1px  0px rgb(var(--labelOutlineColor), 0.3)) */
+    /*     drop-shadow(-1px  1px  0px rgb(var(--labelOutlineColor), 0.3)) */
+    /*     drop-shadow(-1px  0px  0px rgb(var(--labelOutlineColor), 0.3)); */
+}
+.label:hover
+{
+    --labelOutlineColor: 255, 165, 0;
+}
+.customLabel
+{
+    --labelOutlineColor: 255, 0, 0;
 }
 
 .quantityLabel
@@ -149,10 +163,6 @@ td.selected:hover
 
     font-size: 50px;
 }
-.quantityLabel:hover, .customQuantityLabel:hover
-{
-    --labelOutlineColor: orange;
-}
 .customQuantityLabel
 {
     top: 53px;
@@ -160,7 +170,7 @@ td.selected:hover
 
     font-size: 25px;
 
-    --labelOutlineColor: red;
+    --labelOutlineColor: 255, 0, 0;
 }
 
 .priceLabel
@@ -170,13 +180,6 @@ td.selected:hover
     left: 2px;
 
     font-size: 30px;
-
-    --coin-stroke-color: #4444;
-}
-.priceLabel:hover, .customPriceLabel:hover
-{
-    --labelOutlineColor: orange;
-    --coin-stroke-color: #ffa50044;
 }
 .customPriceLabel
 {
@@ -185,13 +188,8 @@ td.selected:hover
     right: 2px;
 
     font-size: 25px;
-    /* I don't know why I used to have this yellow, but if I decide to uncomment this again, the custom quantity label should also have this (which means I should apply this to .customLabel)
+    /* I don't know why I used to have this yellow, but if I decide to uncomment this again, the custom quantity label should also have this (which means I should apply this to .customLabel) */
     /* color: yellow; */
-    --coin-stroke-color: #0004;
-}
-.customLabel
-{
-    --labelOutlineColor: red;
 }
 
 .coin
@@ -202,22 +200,6 @@ td.selected:hover
     /* have to manually specify width and height due to weird github pages issue */
     width: 28px;
     height: 28px;
-
-    /* nice outline */
-    /* based on https://stackoverflow.com/questions/12690444/css-border-on-png-image-with-transparent-parts */
-    --stroke-pos: 1px;
-    --stroke-neg: -1px;
-    /* --coin-stroke-color is set in priceLabel-related classes to handle hovering changing the outline */
-    filter:
-        drop-shadow(var(--stroke-pos) 0 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-neg) 0 var(--coin-stroke-color))
-        drop-shadow(0 var(--stroke-pos) 0 var(--coin-stroke-color))
-        drop-shadow(0 var(--stroke-neg) 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-pos) var(--stroke-pos) 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-pos) var(--stroke-neg) 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-neg) var(--stroke-pos) 0 var(--coin-stroke-color))
-        drop-shadow(var(--stroke-neg) var(--stroke-neg) 0 var(--coin-stroke-color));
-    transition: filter 0.2s;
 }
 
 #screenshotRegion
@@ -269,9 +251,18 @@ td.selected:hover
 /* technically, the name hideOverlayButton would better match how I named the id's, but I wanted to stay consistent with my naming of the css classes, as overlay is the more general/"parent" component */
 .overlayHideButton
 {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    position: sticky;
+
+    top: 0;
+    /* only works properly when using left, not right */
+    left: calc(100%);
+
+    transform: translate(-50%, 50%);
+}
+/* Had to make a more specific rule than button:active in order to maintain the translate of the transform in addition to the scaling */
+.overlayHideButton:active
+{
+    transform: translate(-50%, 50%) scale(0.98);
 }
 
 
@@ -291,8 +282,8 @@ td.selected:hover
     outline: none; /* prevents black outline of focused input, along with when shift is pressed when a button is "focused" */
 }
 
-/* the second entry in :is makes every element inside totalPriceArea fade in (it also makes images inside the p tag not fade in each time they are loaded, but it does fade in with the p tag itself the first time which is what I want; the :not:empty is to make sure the equation fades in whenever it is populated, since it can be "visible" while still empty, causing it to otherwise instantly appear when populated) */
-:is(.overlay, #totalPriceArea :not(img, :empty), #priceCalculationModeSelectionInfo)
+/* the second entry makes every element inside totalPriceArea fade in (it also makes images inside the p tag not fade in each time they are loaded, but it does fade in with the p tag itself the first time which is what I want; the :not:empty is to make sure the equation fades in whenever it is populated, since it can be "visible" while still empty, causing it to otherwise instantly appear when populated) */
+.overlay, #totalPriceArea :not(img, :empty), #priceCalculationModeSelectionInfo
 {
     animation: fadeIn 0.3s forwards;
 }
@@ -312,7 +303,6 @@ td.selected:hover
 #totalPriceMessageHolder
 {
     font-weight: bold;
-    /*-webkit-text-stroke: 0.5px #000a;*/
 
     transition: color 0.2s;
 }
@@ -339,11 +329,17 @@ td.selected:hover
     border-width: 1px;
     border-color: dimgrey;
     color: white;
+
+    /* TEST */
+    /* DIDNT WORK */
+    /* margin: 0; */
 }
 
 #fuzzyMatchesHolder div
 {
     position: relative; /* needed so that absolute position of p children works properly */
+    /* margin: 0; */
+    /* padding: 0; */
 }
 
 #fuzzyMatchesHolder p

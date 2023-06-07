@@ -1,4 +1,11 @@
 const changelog = new Map([
+    ["v2.3.2", `UI Changes:
+- When specifying a custom price or quantity for a selected item (in price calculation mode), the original value now gets dimmed out to make it more clear.
+- Outlines and shadows now look slightly different (look at Bug Fixes for more info)
+- Made the 'X'/close button in overlays stay on screen when scrolling (before it could be scrolled away from).
+
+Bug Fixes:
+- Changed how I do outlines and shadows to resolve newer iOS devices not showing said outlines and shadows in the generated image.`],
     ["v2.3.1", `Bug Fixes:
 - Fixed images not properly loading in screenshot for iOS devices (this might be an issue for Macs as well when using safari, but I have no way of testing it; let me know if you run into this issue)
 - Fixed outlines not showing in screenshot for iOS devices

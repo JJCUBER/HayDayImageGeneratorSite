@@ -527,6 +527,7 @@ function handleAddingItem(e)
     let itemQuantity, prependedQuantityOperator = "";
     let itemQuantityEquation = itemQuantityInput.val().trim();
     // only want to separate starting operator if the item already exists (if the item doesn't exist, the whole quantity should be evaluated as one equation)
+    // TODO -- I think .has is a set/map function
     if(items.has(itemNameFormatted))
     {
         for(let operator of operators)
@@ -882,16 +883,21 @@ function updateItemLayout()
             let customQuantityLabel, customPriceLabel;
             if(shouldShowSelection)
             {
+                // TODO -- I feel like some of this stuff is redundant/repeated stuff from setSelectedState() (though this stuff isn't technically in the DOM yet)
                 if(currItem.customQuantity !== undefined)
                 {
                     customQuantityLabel = document.createElement("p");
                     customQuantityLabel.innerText = currItem.customQuantity;
-                    customQuantityLabel.classList.add("label",  "customLabel", "customQuantityLabel");
+                    customQuantityLabel.classList.add("label", "customLabel", "customQuantityLabel");
                     customQuantityLabel.hidden =  !currItem.isSelected;
                     $(customQuantityLabel).on("click", () =>
                     {
                         itemQuantityInput.trigger("select");
                     });
+
+                    // starts less visible since item is selected and has a custom quantity
+                    if(currItem.isSelected)
+                        quantityLabel.style.opacity = 0.5;
                 }
 
                 if(currItem.customPriceOrMultiplier !== undefined)
@@ -904,6 +910,10 @@ function updateItemLayout()
                     {
                         itemPriceOrMultiplierInput.trigger("select");
                     });
+
+                    // starts less visible since item is selected and has a custom price/mult
+                    if(currItem.isSelected)
+                        priceLabel.style.opacity = 0.5;
                 }
             }
 
@@ -1185,7 +1195,12 @@ function setSelectedState(item, cell, isSelected)
     else
         cell.classList.remove("selected");
 
-    $(cell).find(".customLabel").prop("hidden", !isSelected);
+    const cellSelector = $(cell);
+    cellSelector.find(".customLabel").prop("hidden", !isSelected);
+
+    // make quantity/price less visible when this item is selected and has a custom value
+    cellSelector.find(".quantityLabel").css("opacity", isSelected && item.customQuantity !== undefined ? 0.5 : 1);
+    cellSelector.find(".priceLabel").css("opacity", isSelected && item.customPriceOrMultiplier !== undefined ? 0.5 : 1);
 }
 
 function setSelectedStateAll(items, cells, isSelected)
@@ -1477,6 +1492,13 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.3.2", `UI Changes:
+- When specifying a custom price or quantity for a selected item (in price calculation mode), the original value now gets dimmed out to make it more clear.
+- Outlines and shadows now look slightly different (look at Bug Fixes for more info)
+- Made the 'X'/close button in overlays stay on screen when scrolling (before it could be scrolled away from).
+
+Bug Fixes:
+- Changed how I do outlines and shadows to resolve newer iOS devices not showing said outlines and shadows in the generated image.`],
     ["v2.3.1", `Bug Fixes:
 - Fixed images not properly loading in screenshot for iOS devices (this might be an issue for Macs as well when using safari, but I have no way of testing it; let me know if you run into this issue)
 - Fixed outlines not showing in screenshot for iOS devices
