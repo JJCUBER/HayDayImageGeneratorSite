@@ -424,6 +424,7 @@ td.selected:hover
     animation: spin 2.5s linear infinite;
 }
 
+/* TODO -- you can change animation timing functions throughout the keyframes: https://drafts.csswg.org/css-animations-1/#timing-functions */
 @keyframes spin
 {
     from

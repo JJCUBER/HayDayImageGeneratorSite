@@ -80,13 +80,15 @@ $(document).ready(() =>
         if(buttons.length < selection)
             return;
 
-        buttons.eq(selection - 1).trigger("mousedown");
+        buttons.eq(selection - 1).trigger("mousedown", {usedKeyboard: true});
         event.preventDefault();
     });
     itemNameInput.on("keyup", (e) =>
     {
-        updateFuzzyMatches();
         handleAddingItem(e);
+
+        // this should be done AFTER handling adding the item, since we want this to show no results if enter was pressed and the name input got wiped
+        updateFuzzyMatches();
     });
     itemQuantityInput.on("keyup", handleAddingItem);
     itemPriceOrMultiplierInput.on("keyup", handleAddingItem);

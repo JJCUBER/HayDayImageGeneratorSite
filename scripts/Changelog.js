@@ -1,4 +1,14 @@
 const changelog = new Map([
+    ["v2.4", `Features:
+- Added all the names of tools and expansion materials to the fuzzy searching list (they were always addable, but they previously weren't part of the list of terms to show as matches)
+- Made a blacklist to the fuzzy search list for some item names which aren't sellable (such as lures and feed); you can still add the items by typing the full names if you really want to, though
+
+UI Changes:
+- Made the name input no longer get focused when clicking on the image of an item while in price calculation mode (this makes it less annoying to select/deselect items on mobile, since the name input will no longer be focused with every click)
+- Made the fuzzy matches list get cleared after submitting an item
+
+Bug Fixes:
+- Fixed an obscure bug where typing 1-9,0 to select a fuzzy match would still add an event to the document, where the first click anywhere would refocus the name input`],
     ["v2.3.2", `UI Changes:
 - When specifying a custom price or quantity for a selected item (in price calculation mode), the original value now gets dimmed out to make it more clear.
 - Outlines and shadows now look slightly different (look at Bug Fixes for more info)

@@ -346,12 +346,14 @@ function updateItemLayout()
             image.classList.add("itemImage");
             $(image).on("click", () =>
             {
-                itemNameInput.trigger("select");
-
+                // only want to focus the item name input if not in price calculation mode
+                // TODO -- maybe the name input should never be focused in general, since it never really makes sense to want to keep all the same price and quantities, but change the name (effectively duplicating the item info but with a different item name)?
+                if(!shouldShowSelection)
+                    itemNameInput.trigger("select");
                 // need to update the layout to not include items that just got deselected; I am only putting this in the event handler for clicking on the image itself, since I want the user to be able to modify price/mult and quantity without the item temporarily disappearing
                 // this does cause the problem of clicking the border of the cell toggling the item, but not hiding it when the user wants them hidden (since this event only listens for clicking on the image itself, not anywhere in the cell)
-                // TODO -- I'm wondering if I should make clicking on quantity/price not change the state of the selection in general, though that  could be a bit annoying if the user is trying to quickly select items.
-                if(shouldHideUnselectedItems)
+                // TODO -- I'm wondering if I should make clicking on quantity/price not change the state of the selection in general, though that could be a bit annoying if the user is trying to quickly select items.
+                else if(shouldHideUnselectedItems)
                     updateItemLayout();
             });
 
@@ -722,7 +724,11 @@ async function prepareAllItemNames()
     return prepared;
 }
 
+// gotten from https://hayday.fandom.com/wiki/Supplies (if I got the images for these the same way as I did for everything else, there would be a ton of building images listed as items)
+const suppliesNames = ["Axe", "Dynamite", "Saw", "Shovel", "TNT Barrel", "Pickaxe", "Bolt", "Brick", "Duct Tape", "Hammer", "Hand Drill", "Nail", "Paint Bucket", "Plank", "Screw", "Stone Block", "Tar Bucket", "Wood Panel", "Land Deed", "Mallet", "Map Piece", "Marker Stake"];
 // unfortunately, a few extra "item" names which are neither crops nor products get included ("Honey Mask" which is a duplicate of "Honey Face Mask", "Field", "Apple Tree", "Shop Icon", and "Coins"); I could manually remove these, but I'm not sure if that's a good idea.
+// extraneous "item"/image names (due to how the item names are fetched) that shouldn't be included
+const nameBlacklist = new Set(["Chicken Feed", "Cow Feed", "Pig Feed", "Sheep Feed", "Red Lure", "Green Lure", "Blue Lure", "Purple Lure", "Gold Lure", "Fishing Net", "Mystery Net", "Goat Feed", "Lobster Trap", "Duck Trap", "Honey Mask", "Field", "Apple Tree", "Shop Icon", "Coins"]);
 async function getAllItemNames()
 {
     const fetchPortion = (pageName) =>
@@ -745,7 +751,7 @@ async function getAllItemNames()
     const productNames = await fetchPortion("Products");
     const cropNames = await fetchPortion("Crops");
 
-    return productNames.concat(cropNames);
+    return productNames.concat(cropNames, suppliesNames).filter(name => !nameBlacklist.has(name));
 }
 
 function updateFuzzyMatches()
@@ -768,13 +774,15 @@ function updateFuzzyMatches()
         const button = document.createElement("button");
         button.tabIndex = -1;
         button.innerHTML = fuzzysort.highlight(match, "<b style='color: orange;'>", "</b>");
-        $(button).on("mousedown", {itemName: match.target}, (event) =>
+        $(button).on("mousedown", {itemName: match.target}, (event, customParams) =>
         {
             itemNameInput.val(event.data.itemName);
 
             // need to wait for the mouseup event in order to refocus/reselect the input field (using .one to make sure it only happens once, and using the document as the object to ensure this occurs no matter where on the screen the mouseup happens)
             // TODO -- I need to standardise all of my arrow functions; particularly, I need to decide whether to always include the () even for single parameter, and I need to determine whether it is a good idea to have arrow functions like this that are a single line (without {}) which calls a function (I don't know how "proper" this is, and it could easily lead to accidentally forgetting the () =>, causing it to misbehave)
-            $(document).one("mouseup", () => itemNameInput.trigger("select"));
+            // TODO -- should I keep the matches empty after the user selects one (until they start typing again)?
+            if(!customParams || !customParams.usedKeyboard) // don't want to do this if the user selected a match using the keyboard via 1-9,0
+                $(document).one("mouseup", () => itemNameInput.trigger("select"));
         });
 
         const p = document.createElement("p");
@@ -809,5 +817,4 @@ function createFailedCopyNotification()
     $(notification).on("animationend", notification.remove);
     document.body.appendChild(notification);
 }
-
 
