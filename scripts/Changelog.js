@@ -1,4 +1,6 @@
 const changelog = new Map([
+    ["v2.4.2", `UI Changes:
+- Made the "image failed to copy" overlay always have a width of 80% (the image would be quite tiny on some devices otherwise)`],
     ["v2.4.1", `UI Changes:
 - Made generated image in (failed to copy) overlay rescale in size to properly fit on screen
 

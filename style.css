@@ -443,6 +443,12 @@ td.selected:hover
     }
 }
 
+/* Want this overlay to take up most of the screen horizontally (allowing the image to be more visible) */
+#failedCopyOverlay .overlayBox
+{
+    width: 80%;
+}
+
 /* I want this to resize the overlay box to up to 80%, but I can't seem to get that to work without causing overflow horizontal scrollbar to show up; this seems to look fine anyway */
 /* TODO -- it would be nice to make this image scale to fit on screen without causing overflow in either direction, though that probably wouldn't work well for mobile anyway */
 #failedCopyImageHolder
