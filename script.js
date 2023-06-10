@@ -1239,7 +1239,7 @@ async function prepareAllItemNames()
 const suppliesNames = ["Axe", "Dynamite", "Saw", "Shovel", "TNT Barrel", "Pickaxe", "Bolt", "Brick", "Duct Tape", "Hammer", "Hand Drill", "Nail", "Paint Bucket", "Plank", "Screw", "Stone Block", "Tar Bucket", "Wood Panel", "Land Deed", "Mallet", "Map Piece", "Marker Stake"];
 // unfortunately, a few extra "item" names which are neither crops nor products get included ("Honey Mask" which is a duplicate of "Honey Face Mask", "Field", "Apple Tree", "Shop Icon", and "Coins"); I could manually remove these, but I'm not sure if that's a good idea.
 // extraneous "item"/image names (due to how the item names are fetched) that shouldn't be included
-const nameBlacklist = new Set(["Chicken Feed", "Cow Feed", "Pig Feed", "Sheep Feed", "Red Lure", "Green Lure", "Blue Lure", "Purple Lure", "Gold Lure", "Fishing Net", "Mystery Net", "Goat Feed", "Lobster Trap", "Duck Trap", "Honey Mask", "Field", "Apple Tree", "Shop Icon", "Coins"]);
+const nameBlacklist = new Set(["Chicken Feed", "Cow Feed", "Pig Feed", "Sheep Feed", "Red Lure", "Green Lure", "Blue Lure", "Purple Lure", "Gold Lure", "Fishing Net", "Mystery Net", "Goat Feed", "Lobster Trap", "Duck Trap", "Honey Mask", "Field", "Apple Tree", "Shop Icon", "Coins", "Experience"]);
 async function getAllItemNames()
 {
     const fetchPortion = (pageName) =>
@@ -1261,8 +1261,9 @@ async function getAllItemNames()
 
     const productNames = await fetchPortion("Products");
     const cropNames = await fetchPortion("Crops");
+    const animalProductNames = await fetchPortion("Animal_Goods");
 
-    return productNames.concat(cropNames, suppliesNames).filter(name => !nameBlacklist.has(name));
+    return productNames.concat(cropNames, animalProductNames, suppliesNames).filter(name => !nameBlacklist.has(name));
 }
 
 function updateFuzzyMatches()
@@ -1502,6 +1503,11 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.4.1", `UI Changes:
+- Made generated image in (failed to copy) overlay rescale in size to properly fit on screen
+
+Bug Fixes:
+- Added animal byproducts to the search functionality (they were previously missing, though those items could still be added if you typed the full name out)`],
     ["v2.4", `Features:
 - Added all the names of tools and expansion materials to the fuzzy searching list (they were always addable, but they previously weren't part of the list of terms to show as matches)
 - Made a blacklist to the fuzzy search list for some item names which aren't sellable (such as lures and feed); you can still add the items by typing the full names if you really want to, though

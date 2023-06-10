@@ -728,7 +728,7 @@ async function prepareAllItemNames()
 const suppliesNames = ["Axe", "Dynamite", "Saw", "Shovel", "TNT Barrel", "Pickaxe", "Bolt", "Brick", "Duct Tape", "Hammer", "Hand Drill", "Nail", "Paint Bucket", "Plank", "Screw", "Stone Block", "Tar Bucket", "Wood Panel", "Land Deed", "Mallet", "Map Piece", "Marker Stake"];
 // unfortunately, a few extra "item" names which are neither crops nor products get included ("Honey Mask" which is a duplicate of "Honey Face Mask", "Field", "Apple Tree", "Shop Icon", and "Coins"); I could manually remove these, but I'm not sure if that's a good idea.
 // extraneous "item"/image names (due to how the item names are fetched) that shouldn't be included
-const nameBlacklist = new Set(["Chicken Feed", "Cow Feed", "Pig Feed", "Sheep Feed", "Red Lure", "Green Lure", "Blue Lure", "Purple Lure", "Gold Lure", "Fishing Net", "Mystery Net", "Goat Feed", "Lobster Trap", "Duck Trap", "Honey Mask", "Field", "Apple Tree", "Shop Icon", "Coins"]);
+const nameBlacklist = new Set(["Chicken Feed", "Cow Feed", "Pig Feed", "Sheep Feed", "Red Lure", "Green Lure", "Blue Lure", "Purple Lure", "Gold Lure", "Fishing Net", "Mystery Net", "Goat Feed", "Lobster Trap", "Duck Trap", "Honey Mask", "Field", "Apple Tree", "Shop Icon", "Coins", "Experience"]);
 async function getAllItemNames()
 {
     const fetchPortion = (pageName) =>
@@ -750,8 +750,9 @@ async function getAllItemNames()
 
     const productNames = await fetchPortion("Products");
     const cropNames = await fetchPortion("Crops");
+    const animalProductNames = await fetchPortion("Animal_Goods");
 
-    return productNames.concat(cropNames, suppliesNames).filter(name => !nameBlacklist.has(name));
+    return productNames.concat(cropNames, animalProductNames, suppliesNames).filter(name => !nameBlacklist.has(name));
 }
 
 function updateFuzzyMatches()

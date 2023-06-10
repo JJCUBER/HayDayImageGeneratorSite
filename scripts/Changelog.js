@@ -1,4 +1,9 @@
 const changelog = new Map([
+    ["v2.4.1", `UI Changes:
+- Made generated image in (failed to copy) overlay rescale in size to properly fit on screen
+
+Bug Fixes:
+- Added animal byproducts to the search functionality (they were previously missing, though those items could still be added if you typed the full name out)`],
     ["v2.4", `Features:
 - Added all the names of tools and expansion materials to the fuzzy searching list (they were always addable, but they previously weren't part of the list of terms to show as matches)
 - Made a blacklist to the fuzzy search list for some item names which aren't sellable (such as lures and feed); you can still add the items by typing the full names if you really want to, though

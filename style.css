@@ -233,6 +233,7 @@ td.selected:hover
     left: 50%;
     transform: translate(-50.00005%, -50%); /* the ever-so-slight offset is done since the left side of the outline of the textboxes gets weird (maybe that's only for my computer at 100%, I don't know.) */
 
+    max-width: 80%;
     max-height: 80%;
     overflow-y: auto;
 
@@ -440,5 +441,12 @@ td.selected:hover
     {
         transform: rotate(720deg);
     }
+}
+
+/* I want this to resize the overlay box to up to 80%, but I can't seem to get that to work without causing overflow horizontal scrollbar to show up; this seems to look fine anyway */
+/* TODO -- it would be nice to make this image scale to fit on screen without causing overflow in either direction, though that probably wouldn't work well for mobile anyway */
+#failedCopyImageHolder
+{
+    max-width: 100%;
 }
 
