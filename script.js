@@ -1010,22 +1010,43 @@ function copyImageToClipboard()
 
     copyImageLoadingWheel.prop("hidden", false);
 
+
     let screenshotBlob;
-    htmlToImage.toBlob(screenshotRegion[0])
-        .then(async (blob) =>
-        {
-            // TODO -- it sounds like this might also happen with safari on mac occasionally?  I might might also want to check for the browser being safari.
-            // need to run a second time on iOS (it sounds like just returning the .toBlob call and .then()'ing it doesn't work based on https://github.com/bubkoo/html-to-image/issues/52#issuecomment-1255708420 , so that's why I'm awaiting it here [I don't think that would really be all so different from just returning and calling .then, but I will just do it like this since it seems to work])
-            return isRunningIOS() ? await htmlToImage.toBlob(screenshotRegion[0]) : blob;
-        })
-        .then(blob => new ClipboardItem({"image/png": screenshotBlob = blob})) // also stores the blob in case the error is caught later
-        .then(clipboardItem => navigator.clipboard.write([clipboardItem]))
+    let clipboardWrittenPromise;
+    // In order for copying an image to clipboard on iOS to work, you HAVE to effectively do it directly in the click (more accurately, pointerup) event; this means that having some promises .then()'d is not "acceptable": https://stackoverflow.com/questions/65356108/how-to-use-clipboard-api-to-write-image-to-clipboard-in-safari  AND  https://stackoverflow.com/questions/62327358/javascript-clipboard-api-safari-ios-notallowederror-message  AND  https://webkit.org/blog/10247/new-webkit-features-in-safari-13-1/
+    if(isRunningIOS())
+    {
+        clipboardWrittenPromise = navigator.clipboard.write(
+            [new ClipboardItem(
+                {
+                    "image/png":
+                        (async () =>
+                        {
+                            // need to run a second time on iOS (it sounds like just returning the .toBlob call and .then()'ing it doesn't work based on https://github.com/bubkoo/html-to-image/issues/52#issuecomment-1255708420 , so that's why I'm awaiting it here [I don't think that would really be all so different from just returning and calling .then, but I will just do it like this since it seems to work])
+                            // TODO -- it sounds like this might also happen with safari on mac occasionally?  I might might also want to check for the browser being safari.
+                            await htmlToImage.toBlob(screenshotRegion[0]);
+                            let blob = await htmlToImage.toBlob(screenshotRegion[0]);
+
+                            screenshotBlob = blob; // I'm pretty sure this has to be done separately, otherwise iOS gets mad (probably due to using a variable of outer scope that is "tainted")
+
+                            return blob;
+                        })()
+                }
+            )]
+        );
+    }
+    else // not iOS
+    {
+        clipboardWrittenPromise = htmlToImage.toBlob(screenshotRegion[0])
+            .then(blob => new ClipboardItem({"image/png": screenshotBlob = blob})) // also stores the blob in case the error is caught later
+            .then(clipboardItem => navigator.clipboard.write([clipboardItem]));
+    }
+
+    clipboardWrittenPromise
         .then(createSuccessfulCopyNotification)
         .catch(e =>
         {
             console.log("Unable to generate image and/or copy it to clipboard --", e);
-
-            // I might want to eventually catch right after toBlob() and do the above, then catch here to have a fallback of showing the image on screen for the user to save (or prompt to download).
 
             createFailedCopyNotification();
 
@@ -1051,7 +1072,6 @@ function copyImageToClipboard()
 
             copyImageLoadingWheel.prop("hidden", true);
         });
-
 }
 
 function copyAsTextListToClipboard()
@@ -1546,6 +1566,8 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.6", `Major Fix:
+- Copy image button (finally) works on mobile!  It should automatically copy the image just by clicking the button.  If it does not (if you still get a popup saying copy failed), please click the "Contact" button and let me know, since that shouldn't be happening.`],
     ["v2.5", `Features:
 - Added a "Contact" overlay which has a link to the discord server I created for this tool, along with a link for creating an issue on GitHub
 

@@ -1,4 +1,6 @@
 const changelog = new Map([
+    ["v2.6", `Major Fix:
+- Copy image button (finally) works on mobile!  It should automatically copy the image just by clicking the button.  If it does not (if you still get a popup saying copy failed), please click the "Contact" button and let me know, since that shouldn't be happening.`],
     ["v2.5", `Features:
 - Added a "Contact" overlay which has a link to the discord server I created for this tool, along with a link for creating an issue on GitHub
 
