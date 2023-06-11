@@ -1,4 +1,13 @@
 const changelog = new Map([
+    ["v2.5", `Features:
+- Added a "Contact" overlay which has a link to the discord server I created for this tool, along with a link for creating an issue on GitHub
+
+UI Changes:
+- Added a slight shadow/outline to item images, along with changing the color when hovering (this gives a bit more contrast to items with a similar color to the background)
+- Made the minimum width for the box portion of overlays be 20% (that way, it wouldn't ever be too small)
+
+Misc:
+- A fair bit of code cleanup`],
     ["v2.4.2", `UI Changes:
 - Made the "image failed to copy" overlay always have a width of 80% (the image would be quite tiny on some devices otherwise)`],
     ["v2.4.1", `UI Changes:
@@ -205,7 +214,7 @@ function setUpChangelog()
     }
 
     // effectively interweaves an hr element between each change div
-    changelogInner.append(changes.flatMap(elem => [elem, document.createElement("hr")]).slice(0, -1));
+    changelogOverlay.inner.append(changes.flatMap(elem => [elem, document.createElement("hr")]).slice(0, -1));
 }
 
 function handleVersionChange()
@@ -218,10 +227,10 @@ function handleVersionChange()
 
     localStorage.setItem("lastUsedVersion", latestVersion);
 
-    const latestVersionHeader = changelogInner.find("h2")[0];
+    const latestVersionHeader = changelogOverlay.inner.find("h2")[0];
     latestVersionHeader.innerText += " -- NEW!";
     latestVersionHeader.style.color = "red";
 
-    changelogButton.trigger("click");
+    changelogOverlay.showButton.trigger("click");
 }
 

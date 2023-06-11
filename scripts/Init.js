@@ -1,4 +1,3 @@
-// TODO -- it might be a good idea to create some class for overlays which include selectors for the overlay itself, the background, box, hideButton, and inner (all of which can be selected using $("BaseIdName .overlayClassName") ); this would also declutter the naming of all the basically repeated variables and all the selecting can be done within the class constructor (it also removes the need to have extra ids in the html)
 $(document).ready(() =>
 {
     itemsPerRowSlider = $("#itemsPerRowSlider");
@@ -11,9 +10,8 @@ $(document).ready(() =>
     bottomText = $("#bottomText");
     screenshotRegion = $("#screenshotRegion");
 
-    settingsButton = $("#settingsButton");
-    settingsOverlay = $("#settingsOverlay");
-    hideSettingsButton = $("#hideSettingsButton");
+    settingsOverlay = new Overlay("settingsOverlay", "showButton");
+
     abbreviationMappingTable = $("#abbreviationMappingTable");
     bottomTextSettingInput = $("#bottomTextSettingInput");
     textListSeparatorRadios = $("input[name='textListSeparatorGroup']");
@@ -37,14 +35,12 @@ $(document).ready(() =>
 
     priceCalculationModeSelectionInfo = $("#priceCalculationModeSelectionInfo");
 
-    changelogButton = $("#changelogButton");
-    changelogOverlay = $("#changelogOverlay");
-    changelogInner = $("#changelogInner");
-    hideChangelogButton = $("#hideChangelogButton");
+    changelogOverlay = new Overlay("changelogOverlay", "showButton");
 
-    failedCopyOverlay = $("#failedCopyOverlay");
-    hideFailedCopyButton = $("#hideFailedCopyButton");
-    failedCopyImageHolder = $("#failedCopyImageHolder");
+    failedCopyOverlay = new Overlay("failedCopyOverlay", "imageHolder");
+
+    /* TODO -- should this be called contactUsOverlay instead? */
+    contactOverlay = new Overlay("contactOverlay", "showButton");
 
     copyImageLoadingWheel = $("#copyImageLoadingWheel");
 
@@ -103,23 +99,23 @@ $(document).ready(() =>
     // TODO -- all of this event stuff seems to be identical for both the settings and changelog popups (and probably for potential future ones as well); I should probably turn at least part of this into some function with parameters for the corresponding jquery objects/selectors (for show button, hide button, background, etc.)
 
     // TODO -- I might want to eventually move this css stuff to a class, then use classList to add/remove these classes from the respective elements?  https://developer.mozilla.org/en-US/docs/Web/API/Element/classList
-    settingsButton.on("click", () =>
+    settingsOverlay.showButton.on("click", () =>
     {
-        settingsOverlay.prop("hidden", false);
+        settingsOverlay.overlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         $("body").css("overflow", "hidden");
         // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
         screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
-    hideSettingsButton.on("click", () =>
+    settingsOverlay.hideButton.on("click", () =>
     {
-        settingsOverlay.prop("hidden", true);
+        settingsOverlay.overlay.prop("hidden", true);
         $("body").css("overflow", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
-    $("#settingsBackground").on("click", () =>
+    settingsOverlay.background.on("click", () =>
     {
-        hideSettingsButton.trigger("click");
+        settingsOverlay.hideButton.trigger("click");
     });
 
 
@@ -167,7 +163,7 @@ $(document).ready(() =>
     });
     bottomText.on("click", () =>
     {
-        settingsButton.trigger("click");
+        settingsOverlay.showButton.trigger("click");
         bottomTextSettingInput.trigger("select");
     });
 
@@ -392,38 +388,59 @@ $(document).ready(() =>
 
     setUpChangelog();
 
-    changelogButton.on("click", () =>
+    changelogOverlay.showButton.on("click", () =>
     {
-        changelogOverlay.prop("hidden", false);
+        changelogOverlay.overlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         $("body").css("overflow", "hidden");
         // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
         screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
-    hideChangelogButton.on("click", () =>
+    changelogOverlay.hideButton.on("click", () =>
     {
-        changelogOverlay.prop("hidden", true);
+        changelogOverlay.overlay.prop("hidden", true);
         $("body").css("overflow", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
-    $("#changelogBackground").on("click", () =>
+    changelogOverlay.background.on("click", () =>
     {
-        hideChangelogButton.trigger("click");
+        changelogOverlay.hideButton.trigger("click");
     });
 
     handleVersionChange();
 
 
 
-    hideFailedCopyButton.on("click", () =>
+    failedCopyOverlay.hideButton.on("click", () =>
     {
-        failedCopyOverlay.prop("hidden", true);
+        failedCopyOverlay.overlay.prop("hidden", true);
         $("body").css("overflow", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
-    $("#failedCopyBackground").on("click", () =>
+    failedCopyOverlay.background.on("click", () =>
     {
-        hideFailedCopyButton.trigger("click");
+        failedCopyOverlay.hideButton.trigger("click");
+    });
+
+
+
+    contactOverlay.showButton.on("click", () =>
+    {
+        contactOverlay.overlay.prop("hidden", false);
+        // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
+        $("body").css("overflow", "hidden");
+        // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
+        screenshotRegion.css("margin-right", "calc(100vw - 100%)");
+    });
+    contactOverlay.hideButton.on("click", () =>
+    {
+        contactOverlay.overlay.prop("hidden", true);
+        $("body").css("overflow", "visible");
+        screenshotRegion.css("margin-right", "unset");
+    });
+    contactOverlay.background.on("click", () =>
+    {
+        contactOverlay.hideButton.trigger("click");
     });
 
 

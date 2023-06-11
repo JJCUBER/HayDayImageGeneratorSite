@@ -19,10 +19,10 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js" integrity="sha512-sdAWRZSPnL/EbXixTyBhffFggsxlPrxEMLKvseTBMfY3MGxYvXvm83S/WddNpx1tXPylK5warEPp7uu1yiNsgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=2.4.2">
+        <link rel="stylesheet" href="style.css?v=2.5">
 
 
-        <script src="script.js?v=2.4.2"></script>
+        <script src="script.js?v=2.5"></script>
     </head>
     <body>
         <h2>Options</h2>
@@ -31,8 +31,11 @@
         <input type="range" min="1" max="12" id="itemsPerRowSlider" style="vertical-align: sub;"> <!-- seems to align slightly better than "vertical-align: middle" -->
         <label id="itemsPerRowLabel">8</label>
 
-        <button id="settingsButton" style="margin-left: 20px;">Settings</button>
-        <button id="changelogButton">Changelog</button>
+        <button id="settingsOverlayShowButton" style="margin-left: 20px;">Settings</button>
+        <button id="changelogOverlayShowButton">Changelog</button>
+        <!-- TODO -- impl -->
+        <!-- <button id="tutorialOverlayShowButton">Tutorial</button> -->
+        <button id="contactOverlayShowButton">Contact</button>
 
         <div style="height: 20px;"></div>
         <hr>
@@ -97,10 +100,10 @@
         </div>
 
         <div id="settingsOverlay" class="overlay" hidden>
-            <div id="settingsBackground" class="overlayBackground"></div>
-            <div id="settingsBox" class="overlayBox">
-                <button id="hideSettingsButton" class="overlayHideButton">X</button>
-                <div id="settingsInner" class="overlayInner">
+            <div class="overlayBackground"></div>
+            <div class="overlayBox">
+                <button class="overlayHideButton">X</button>
+                <div class="overlayInner">
                     <!-- <div style="height: 10px;"></div> -->
                     <h2>
                         Item Abbreviations
@@ -151,18 +154,18 @@
         </div>
 
         <div id="changelogOverlay" class="overlay" hidden>
-            <div id="changelogBackground" class="overlayBackground"></div>
-            <div id="changelogBox" class="overlayBox">
-                <button id="hideChangelogButton" class="overlayHideButton">X</button>
-                <div id="changelogInner" class="overlayInner"></div>
+            <div class="overlayBackground"></div>
+            <div class="overlayBox">
+                <button class="overlayHideButton">X</button>
+                <div class="overlayInner"></div>
             </div>
         </div>
 
         <div id="failedCopyOverlay" class="overlay" hidden>
-            <div id="failedCopyBackground" class="overlayBackground"></div>
-            <div id="failedCopyBox" class="overlayBox">
-                <button id="hideFailedCopyButton" class="overlayHideButton">X</button>
-                <div id="failedCopyInner" class="overlayInner">
+            <div class="overlayBackground"></div>
+            <div class="overlayBox">
+                <button class="overlayHideButton">X</button>
+                <div class="overlayInner">
                     <h2>Copy Failed</h2>
 
                     <!-- TODO -- need to make this look better... it's disgusting rn -->
@@ -178,7 +181,24 @@
 
                     <hr>
 
-                    <img id="failedCopyImageHolder">
+                    <img id="failedCopyOverlayImageHolder">
+                </div>
+            </div>
+        </div>
+
+        <div id="contactOverlay" class="overlay" hidden>
+            <div class="overlayBackground"></div>
+            <div class="overlayBox">
+                <button class="overlayHideButton">X</button>
+                <div class="overlayInner">
+                    <h2>Discord</h2>
+                    <!-- reason for rel portion: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a#security_and_privacy  and  https://stackoverflow.com/questions/15551779/open-link-in-new-tab-or-window -->
+                    <a href="https://discord.gg/8SEjuFYWnB" target="_blank" rel="noopener noreferrer">Server Invite</a>
+
+                    <hr>
+
+                    <h2>GitHub</h2>
+                    <a href="https://github.com/JJCUBER/HayDayImageGeneratorSite/issues/new" target="_blank" rel="noopener noreferrer">Submit Issue</a>
                 </div>
             </div>
         </div>

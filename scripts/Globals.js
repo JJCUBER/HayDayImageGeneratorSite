@@ -1,9 +1,9 @@
 let itemsPerRow = 8;
-let textListSeparatorSelectedRadio = 0; // , textListCustomSeparator = "";
+let textListSeparatorSelectedRadio = 0;
 
 let itemsPerRowSlider, itemsPerRowLabel, itemNameInput, itemQuantityInput, itemPriceOrMultiplierInput, itemTable;
 let bottomText, screenshotRegion;
-let settingsButton, settingsOverlay, hideSettingsButton, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput;
+let settingsOverlay, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput;
 let priceCalculationModeStateSpan;
 let disableInPriceCalculationModeElems, disableOutsidePriceCalculationModeElems;
 let equationVisibilityStateSpan, unselectedItemsVisibilityStateSpan;
@@ -12,8 +12,7 @@ let totalPriceArea, totalPriceHolder, totalPriceMessageHolder, totalPriceEquatio
 let coinImageUrl;
 let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
-let changelogButton, changelogOverlay, changelogInner, hideChangelogButton;
-let failedCopyOverlay, hideFailedCopyButton, failedCopyImageHolder;
+let changelogOverlay, failedCopyOverlay, contactOverlay;
 let copyImageLoadingWheel;
 
 let fuzzyMatchesHolder;
