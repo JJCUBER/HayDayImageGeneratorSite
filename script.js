@@ -163,6 +163,10 @@ $(document).ready(() =>
     $("#itemSubmitButton").on("click", (e) => handleAddingItem(e, true));
     $("#itemDeleteButton").on("click", (e) =>
     {
+        // want to return early if there was no item name (otherwise, the item quantity input's value would stay at 0 because handleAddingItem() would return early without doing anything)
+        if(!formatItemName(itemNameInput.val()).length)
+            return;
+
         //items.delete();
         itemQuantityInput.val("0");
         handleAddingItem(e, true);
@@ -1593,6 +1597,10 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.8.1", `Bug Fixes:
+- Made delete button do nothing when name input is empty (previously, it would set the quantity to 0; this isn't exactly a bug)
+- finally fixed the weird gap between fuzzy matches on mobile
+- fixed item cells getting warped when on a small screen with too many columns specified (images still maintain their aspect ratio, but they no longer scale down way below 100x100)`],
     ["v2.8", `Features:
 - Added a delete button (outside of price calculation/selection mode; I added it since people might find it more intuitive when newer to the tool)
 - Disabled native autocomplete that could sometimes show up over top my own fuzzy autocomplete

@@ -91,6 +91,10 @@ $(document).ready(() =>
     $("#itemSubmitButton").on("click", (e) => handleAddingItem(e, true));
     $("#itemDeleteButton").on("click", (e) =>
     {
+        // want to return early if there was no item name (otherwise, the item quantity input's value would stay at 0 because handleAddingItem() would return early without doing anything)
+        if(!formatItemName(itemNameInput.val()).length)
+            return;
+
         //items.delete();
         itemQuantityInput.val("0");
         handleAddingItem(e, true);

@@ -135,19 +135,14 @@ td.selected:hover
 .itemCell
 {
     position: relative;
-
-    width: 100px;
-    height: 100px;
-
-    /* keeps images smaller than 100x100 centered */
-    text-align: center;
 }
 
 .itemImage
 {
     /* preserves aspect ratio (prevents stretching); might want to find a way to scale up images smaller than the 100x100 of the cell itself? */
-    max-width: 100%;
-    max-height: 100%;
+    width: 100px;
+    height: 100px;
+    object-fit: contain; /* prevents stretching the image; object-fit:scale-down seems like it does the same thing, except it blows up items smaller than the 100x100 which also don't have a 1:1 aspect ratio */
 
     /* Makes the item images stand out a touch more */
     --itemImageOutlineColor: rgb(0, 0, 0, 0.5); /* default */
@@ -362,12 +357,26 @@ td.selected:hover
     position: absolute;
     width: 100%;
     z-index: 1;
+
+    margin: 0;
+    padding: 0;
+
+    /* fixes the gap issues */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 /* animates when the list of matches goes from > non-empty */
 #fuzzyMatchesHolder:not(:empty)
 {
     animation: fadeIn 0.2s forwards;
+}
+
+/* due to how the display: flex works, this holder being empty still blocks input for a region of the screen (causing issues with phones that wrap the price input to the next line) */
+#fuzzyMatchesHolder:empty
+{
+    display: none;
 }
 
 #fuzzyMatchesHolder button
@@ -382,14 +391,12 @@ td.selected:hover
     color: white;
 
     margin: 0;
+    padding-left: 1em; /* prevent overlap with 1-9,0 number label */
 }
 
 #fuzzyMatchesHolder div
 {
     position: relative; /* needed so that absolute position of p children works properly */
-    /* margin: 0; */
-    /* padding: 0; */
-    /* display-style: block; */
 }
 
 #fuzzyMatchesHolder p
