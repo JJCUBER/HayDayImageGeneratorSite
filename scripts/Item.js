@@ -445,13 +445,10 @@ function copyImageToClipboard()
 
     const createdBy = document.createElement("p");
     // for those of you reading this, I would appreciate if this doesn't get removed from the generated image
-    createdBy.innerText = "Tool Created by JJCUBER";
-    createdBy.style.textAlign = "right";
-    createdBy.style.fontSize = "10px";
-    createdBy.style.margin = "10px";
-    createdBy.style.marginTop = "2px";
-    createdBy.style.fontWeight = "900";
-    screenshotRegion.append(createdBy);
+    createdBy.innerText = "jjcuber.github.io/hdig"; // used to say, "Tool Created by JJCUBER"
+    createdBy.classList.add("watermark");
+    if(!$(".watermark").length) // only append if the watermark always visible on screen didn't get removed
+        screenshotRegion.append(createdBy);
 
     copyImageLoadingWheel.prop("hidden", false);
 
@@ -802,7 +799,15 @@ function updateFuzzyMatches()
             // TODO -- I need to standardise all of my arrow functions; particularly, I need to decide whether to always include the () even for single parameter, and I need to determine whether it is a good idea to have arrow functions like this that are a single line (without {}) which calls a function (I don't know how "proper" this is, and it could easily lead to accidentally forgetting the () =>, causing it to misbehave)
             // TODO -- should I keep the matches empty after the user selects one (until they start typing again)?
             if(!customParams || !customParams.usedKeyboard) // don't want to do this if the user selected a match using the keyboard via 1-9,0
-                $(document).one("mouseup", () => itemNameInput.trigger("focus"));
+                // This must be applied to every element due to how event bubble up (if you release your mouse on an item cell after clicking down on a fuzzy match, it will trigger the item's events first before bubbling/propagating up; this means that the only solution is to put the handler on every element, stop propogation, and cancel all the remaining events added via this "namespace" (.fuzzyMatchClick)).  Unfortunately, managing to click the border of an item cell on the mouseup event will end up executing that first, likely do to having same priority but having different event added order (this event is added after).
+                // TODO -- I might be able to fix this by storing the values for all 3 inputs and just modify it in my event listener below, which means that I would want to go back to using $(document) so that it has the least specificity (which means it will execute last, reverting all the values to normal).
+                $("*").one("mouseup.fuzzyMatchClick", (e) =>
+                {
+                    itemNameInput.trigger("focus");
+                    e.stopPropagation();
+
+                    $("*").off(".fuzzyMatchClick");
+                });
         });
 
         const p = document.createElement("p");

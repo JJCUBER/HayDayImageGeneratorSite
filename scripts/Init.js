@@ -89,6 +89,12 @@ $(document).ready(() =>
     itemQuantityInput.on("keyup", handleAddingItem);
     itemPriceOrMultiplierInput.on("keyup", handleAddingItem);
     $("#itemSubmitButton").on("click", (e) => handleAddingItem(e, true));
+    $("#itemDeleteButton").on("click", (e) =>
+    {
+        //items.delete();
+        itemQuantityInput.val("0");
+        handleAddingItem(e, true);
+    });
 
 
     const coinImagePromise = getImageUrl("Coin", 28)

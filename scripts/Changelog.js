@@ -1,4 +1,11 @@
 const changelog = new Map([
+    ["v2.8", `Features:
+- Added a delete button (outside of price calculation/selection mode; I added it since people might find it more intuitive when newer to the tool)
+- Disabled native autocomplete that could sometimes show up over top my own fuzzy autocomplete
+
+UI Changes:
+- made images that aren't a 1:1 aspect ratio not stretch (images already smaller than 100x100 also don't get blown up)
+- fixed gap between fuzzy matches on pc (still struggling to fix it on mobile for some reason)`],
     ["v2.7", `Features:
 - Upon your first time ever using the site, the items per row count now defaults to whatever will comfortably fit on screen for the user (up to a max of 8 DEFAULT); this will not affect you if you have used the site before
 - Clicking the bottom text now (in addition to already focusing the setting to modify it) additionally scrolls to the setting to ensure that it is on screen (especially on mobile)
