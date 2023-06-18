@@ -1,4 +1,24 @@
 const changelog = new Map([
+    ["v2.7", `Features:
+- Upon your first time ever using the site, the items per row count now defaults to whatever will comfortably fit on screen for the user (up to a max of 8 DEFAULT); this will not affect you if you have used the site before
+- Clicking the bottom text now (in addition to already focusing the setting to modify it) additionally scrolls to the setting to ensure that it is on screen (especially on mobile)
+
+UI Changes:
+- Made buttons and inputs look the same across all platforms
+- Added a submit button for adding/modifying items (since many people were confused by simply pressing enter to submit; that way still works, this is just another way of submitting the changes)
+- Made formatting look the same across all platforms as well
+- Made the UI/page scale up to the width of phone screens so that it isn't so tiny
+- Decreased the size of input boxes (and made it relative to the default font size being used, which is dependent on the device; iOS devices are forced to 16px, since that's what iOS requires for font size in order to not zoom in when focusing an input)
+- Made selecting a fuzzy search result/match not highlight the new text (instead putting the cursor at the end of the word(s))
+- Buttons that get wrapped to the next line (most noticeable on smaller screens, i.e. mobile phones) now have a gap between them, making it look less crowded/bad
+- Improved the layout/styling of the settings overlay (input boxes now fit properly to the dimensions of the overlay dependant on how large your device is, the abbreviation mappings table can't take up too much of the screen anymore which allows for easily scrolling to the rest of the settings on mobile)
+- Ensured that the contact overlay always has a reasonable width (since it is so small)
+
+Bug Fixes:
+- Fixed issues with the bottom text in the generated image on android
+
+Misc:
+- minor code improvements`],
     ["v2.6", `Major Fix:
 - Copy image button (finally) works on mobile!  It should automatically copy the image just by clicking the button.  If it does not (if you still get a popup saying copy failed), please click the "Contact" button and let me know, since that shouldn't be happening.`],
     ["v2.5", `Features:
@@ -219,6 +239,7 @@ function setUpChangelog()
     changelogOverlay.inner.append(changes.flatMap(elem => [elem, document.createElement("hr")]).slice(0, -1));
 }
 
+// TODO -- I might want to put all of the local storage-related calls in wrapper functions in Persist.js
 function handleVersionChange()
 {
     const latestVersion = changelog.keys().next().value;

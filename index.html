@@ -3,7 +3,10 @@
     <head>
         <meta charset="UTF-8">
         <!-- https://search.google.com/search-console/about -->
+        <!-- Making it self-closing/closing at all shouldn't matter, but this was the way that google provided the link, so I'm keeping it that way -->
         <meta name="google-site-verification" content="DTNkB2nNCvd3ms-A5Y9mVcCtJJj-9jl-TIvuNIWZVjY" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <title>Hay Day Image Generator</title>
 
         <!-- Using the unminified version since it might help me debug any issues; might want to eventually use https://code.jquery.com/jquery-3.6.4.min.js -->
@@ -19,10 +22,10 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js" integrity="sha512-sdAWRZSPnL/EbXixTyBhffFggsxlPrxEMLKvseTBMfY3MGxYvXvm83S/WddNpx1tXPylK5warEPp7uu1yiNsgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=2.6">
+        <link rel="stylesheet" href="style.css?v=2.7">
 
 
-        <script src="script.js?v=2.6"></script>
+        <script src="script.js?v=2.7"></script>
     </head>
     <body>
         <h2>Options</h2>
@@ -49,32 +52,35 @@
         <label for="itemNameInput">Name</label>
         <!-- this div needs to have position be relative in order for 100% width of the inner div to not cover the whole document ( https://stackoverflow.com/questions/6625116/css-position-absolute-and-full-width-problem ) -->
         <div style="display: inline-block; position: relative;">
-            <input type="text" id="itemNameInput">
+            <!-- using em to be relative to the font size, since the font size is increased on iOS (to 16px) -->
+            <input type="text" id="itemNameInput" style="width: 8em;">
             <div id="fuzzyMatchesHolder"></div>
         </div>
 
         <label for="itemQuantityInput">Quantity</label>
-        <input type="text" id="itemQuantityInput" value=1>
+        <input type="text" id="itemQuantityInput" style="width: 3em;" value=1>
 
         <label for="itemPriceOrMultiplierInput">Price/Multiplier</label>
-        <input type="text" id="itemPriceOrMultiplierInput" value="5x">
+        <input type="text" id="itemPriceOrMultiplierInput" style="width: 3em;" value="5x">
+
+        <button id="itemSubmitButton">Submit</button>
 
         <br>
-        <div style="height: 10px;"></div>
+        <div style="height: 2px;"></div>
 
         <button id="clearAllButton" class="disableInPriceCalculationMode">Clear All</button>
         <button id="copyImageToClipboardButton">Copy Image to Clipboard</button>
         <button id="copyAsTextListButton">Copy as Text List</button>
         <div id="copyImageLoadingWheel" class="loading" hidden></div>
         <br>
-        <div style="height: 10px;"></div>
+        <div style="height: 2px;"></div>
         <button id="priceCalculationToggleButton"><span id="priceCalculationModeStateSpan">Enable</span> Price Calculation Mode</button>
         <button id="selectAllButton" class="disableOutsidePriceCalculationMode">Select All</button>
         <button id="clearSelectionButton" class="disableOutsidePriceCalculationMode">Clear Selection</button>
         <button id="subtractSelectedQuantitiesButton" class="disableOutsidePriceCalculationMode">Subtract Selected Quantities</button>
         <button id="deleteSelectedButton" class="disableOutsidePriceCalculationMode">Delete Selected</button>
         <br>
-        <div style="height: 10px;"></div>
+        <div style="height: 2px;"></div>
         <button id="resetCustomValuesButton" class="disableOutsidePriceCalculationMode">Reset Custom Values</button>
         <button id="equationVisibilityToggleButton" class="disableOutsidePriceCalculationMode"><span id="equationVisibilityStateSpan">Show</span> Equation</button>
         <button id="unselectedItemsVisibilityToggleButton" class="disableOutsidePriceCalculationMode"><span id="unselectedItemsVisibilityStateSpan">Hide</span> Unselected</button>
@@ -110,7 +116,7 @@
                         <br>
                         <small><small>(case-insensitive)</small></small>
                     </h2>
-                    <div id="abbreviationMappingTableArea">
+                    <div id="abbreviationMappingTableArea" style="max-height: 40vh;">
                         <table id="abbreviationMappingTable">
                             <tr>
                                 <th>Abbreviation</th>
@@ -122,7 +128,7 @@
                     <hr>
 
                     <h2>Bottom Text</h2>
-                    <textarea id="bottomTextSettingInput" rows="3" cols="45"></textarea>
+                    <textarea id="bottomTextSettingInput" rows="3" style="width: 90%;"></textarea>
 
                     <hr>
 
@@ -134,7 +140,7 @@
                     <input type="radio" name="textListSeparatorGroup" id="textListSeparatorCustomRadio">
                     <label for="textListSeparatorCustomRadio">Custom</label>
 
-                    <input type="text" id="textListCustomSeparatorInput" style="width: 40px;" value="">
+                    <input type="text" id="textListCustomSeparatorInput" style="width: 3em;" value="">
 
                     <hr>
 
@@ -143,12 +149,29 @@
                         <br>
                         <small><small>variables: {{name}}, {{quantity}}, {{price}}</small></small>
                     </h2>
-                    <textarea id="textListFormatInput" rows="3" cols="45"></textarea>
+                    <textarea id="textListFormatInput" rows="3" style="width: 90%;"></textarea>
 
                     <hr>
 
                     <h2>Item for Price Calculation</h2>
-                    <input type="text" id="priceCalculationItemInput">
+                    <input type="text" id="priceCalculationItemInput" style="width: 8em;">
+
+                    <!-- TODO -- finish implementing
+                    <hr>
+
+                    <h2>Selections</h2>
+
+                    <div style="display: inline-block; text-align: left;">
+                        <input type="checkbox" id="defaultItemsToSelectedCheckbox">
+                        <label for="defaultItemsToSelectedCheckbox">Default new items to selected</label>
+                        <br>
+                        <input type="checkbox" id="alwaysShowSelectedPriceCheckbox">
+                        <label for="alwaysShowSelectedPriceCheckbox">Always show selected price</label>
+                        <br>
+                        <input type="checkbox" id="persistSelectionCheckbox">
+                        <label for="persistSelectionCheckbox">Save selection and custom values</label>
+                    </div>
+                    -->
                 </div>
             </div>
         </div>

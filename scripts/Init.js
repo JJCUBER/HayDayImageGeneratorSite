@@ -88,6 +88,7 @@ $(document).ready(() =>
     });
     itemQuantityInput.on("keyup", handleAddingItem);
     itemPriceOrMultiplierInput.on("keyup", handleAddingItem);
+    $("#itemSubmitButton").on("click", (e) => handleAddingItem(e, true));
 
 
     const coinImagePromise = getImageUrl("Coin", 28)
@@ -164,6 +165,9 @@ $(document).ready(() =>
     bottomText.on("click", () =>
     {
         settingsOverlay.showButton.trigger("click");
+        // bottomTextSettingInput[0].scrollIntoView(false); // ensures that the textarea is visible/on screen (and puts it at the bottom so that it won't overlap with the x/close button)
+        bottomTextSettingInput[0].scrollIntoView(); // ensures that the textarea is visible/on screen (and puts it at the top; for some reason, iOS doesn't do the normal behavior of shifting the page up when showing the keyboard after doing it this way)
+        // TODO -- maybe this should be .focus() instead?
         bottomTextSettingInput.trigger("select");
     });
 
@@ -449,5 +453,12 @@ $(document).ready(() =>
     {
         preparedItemNames = prepared;
     });
+
+
+
+    // prevents zooming in on input/textarea focus in iOS
+    // TODO -- maybe make this some class and/or css media query-related thing?
+    if(isRunningIOS())
+        $("input, textarea").css("font-size", "16px");
 });
 

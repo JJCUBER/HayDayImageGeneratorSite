@@ -7,7 +7,29 @@ body
 
 button
 {
+    /* mimicking chromium-based colors */
+    color: black;
+    border-color: black;
+    background-color: rgba(240, 240, 240); /* found this value from https://github.com/chromium/chromium/blob/6272343bc05f9498f366682399eb0aa21f76ff47/content/child/webthemeengine_impl_default_browsertest.cc based on the names of colors in the devtools inspector */
+
     transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+
+    /* This combined with the change to divs separating groups of buttons maintains the 10px gap, while also having a slightly less 8px gap between wrapped buttons (buttons that wrap to the next line); before, there would be no gap between these vertically, making it look bad */
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+button:disabled
+{
+    /* mimicking the coloring/styling used by default on chromium-based browsers; found these values from devtools inspector */
+    /* -------- */
+    /* color: -internal-light-dark(rgba(16, 16, 16, 0.3), rgba(255, 255, 255, 0.3)); */
+    /* background-color: -internal-light-dark(rgba(239, 239, 239, 0.3), rgba(19, 1, 1, 0.3)); */
+    /* border-color: -internal-light-dark(rgba(118, 118, 118, 0.3), rgba(195, 195, 195, 0.3)); */
+    /* -------- */
+    color: rgba(16, 16, 16, 0.3);
+    background-color: rgba(239, 239, 239, 0.3);
+    border-color: rgba(118, 118, 118, 0.3);
 }
 
 button:active
@@ -29,8 +51,6 @@ button + button
 button, input, textarea
 {
     border-style: solid;
-    /* outright specifying this seems to mess with the alignment of the items per row slider for some reason?  The default seems to be ~2px. */
-    /* border-width: 2px; */
 }
 
 input, textarea
@@ -41,6 +61,13 @@ input, textarea
 :is(input, textarea):focus
 {
     background-color: #ff05;
+}
+
+/* only want to affect text-type inputs; otherwise, it messes up sliders, radio buttons, and checkboxes */
+button, input[type="text"], textarea
+{
+    border-radius: 0;
+    border-width: 2px;
 }
 
 td
@@ -90,6 +117,9 @@ td.selected:hover
 
     margin-top: 10px;
     margin-bottom: 0px; /* this makes the screenshotRegion div wrap more tightly around this */
+
+    /* this makes it so that text never wraps (other than where the <br>'s are put, which come from the multiline input), and it preserves consecutive spaces instead of collapsing them into 1; this is required for images to properly generate on android (otherwise the wrapping isn't taken into account as part of the DOM's calculated regions, making it go out of the image and over top the watermark) */
+    white-space: pre;
 }
 
 #bottomText:hover
@@ -245,8 +275,8 @@ td.selected:hover
     transform: translate(-50.00005%, -50%); /* the ever-so-slight offset is done since the left side of the outline of the textboxes gets weird (maybe that's only for my computer at 100%, I don't know.) */
 
     min-width: 20%;
-    max-width: 80%;
-    max-height: 80%;
+    max-width: 90%;
+    max-height: 90%;
     overflow-y: auto;
 
     background-color: #fffaca;
@@ -458,6 +488,7 @@ td.selected:hover
 /* Want this overlay to take up most of the screen horizontally (allowing the image to be more visible) */
 #failedCopyOverlay .overlayBox
 {
+    /* TODO -- since I made the max width/height for overlays 90%, should I change this to 90% as well? */
     width: 80%;
 }
 
@@ -466,5 +497,11 @@ td.selected:hover
 #failedCopyOverlayImageHolder
 {
     max-width: 100%;
+}
+
+/* maintain reasonable width of contact overlay even on mobile */
+#contactOverlay .overlayInner
+{
+    min-width: 12em;
 }
 

@@ -15,10 +15,10 @@ function convertToTitleSnakeCase(phrase)
 }
 
 // gotten from https://stackoverflow.com/questions/9038625/detect-if-device-is-ios
-const iOSPlatformList = ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'];
+const iOSPlatformList = new Set(["iPad Simulator", "iPhone Simulator", "iPod Simulator", "iPad", "iPhone", "iPod"]);
 function isRunningIOS()
 {
-    return iOSPlatformList.includes(navigator.platform) ||
+    return iOSPlatformList.has(navigator.platform) ||
         // iPad on iOS 13 detection
         (navigator.userAgent.includes("Mac") && "ontouchend" in document);
 }
@@ -160,6 +160,7 @@ $(document).ready(() =>
     });
     itemQuantityInput.on("keyup", handleAddingItem);
     itemPriceOrMultiplierInput.on("keyup", handleAddingItem);
+    $("#itemSubmitButton").on("click", (e) => handleAddingItem(e, true));
 
 
     const coinImagePromise = getImageUrl("Coin", 28)
@@ -236,6 +237,9 @@ $(document).ready(() =>
     bottomText.on("click", () =>
     {
         settingsOverlay.showButton.trigger("click");
+        // bottomTextSettingInput[0].scrollIntoView(false); // ensures that the textarea is visible/on screen (and puts it at the bottom so that it won't overlap with the x/close button)
+        bottomTextSettingInput[0].scrollIntoView(); // ensures that the textarea is visible/on screen (and puts it at the top; for some reason, iOS doesn't do the normal behavior of shifting the page up when showing the keyboard after doing it this way)
+        // TODO -- maybe this should be .focus() instead?
         bottomTextSettingInput.trigger("select");
     });
 
@@ -521,6 +525,13 @@ $(document).ready(() =>
     {
         preparedItemNames = prepared;
     });
+
+
+
+    // prevents zooming in on input/textarea focus in iOS
+    // TODO -- maybe make this some class and/or css media query-related thing?
+    if(isRunningIOS())
+        $("input, textarea").css("font-size", "16px");
 });
 
 
@@ -554,8 +565,9 @@ class Overlay
 
 /* -------- scripts/Item.js -------- */
 // There are more operators than the ones here technically supported by math.js, but I feel like these are all the "reasonable" ones to support for the automatic prepending of the old quantity/custom quantity ( https://mathjs.org/docs/expressions/syntax.html )
+// TODO -- I could theoretically make this a set, but that's probably not a good idea since the "keys" have differing lengths and I'm just looking for whether a given equation string starts with one of these keys
 const operators = ['+', '-', '*', '/', '^', '%', "mod", '&', '|', "<<", ">>>", ">>"]; // >>> should be before >> to ensure the full operator gets removed then readded later (if >> was first, ">>> 5" would only remove the first 2 '>' leaving "> 5")
-function handleAddingItem(e)
+function handleAddingItem(e, usedSubmitButton = false)
 {
     // only want the name box to have the invalid red border until the user starts typing again (tabbing into this textbox also cancels it; unfortunately, this gets removed almost immediately if the user starts typing right after pressing enter, since it takes a bit of time for the fetch to occur and for the invalid class to be added, if needed)
     if(itemNameInput.hasClass("invalid"))
@@ -563,7 +575,7 @@ function handleAddingItem(e)
 
 
     // TODO -- might want to be using e.key instead
-    if(e.code !== "Enter")
+    if(!usedSubmitButton && e.code !== "Enter")
         return;
 
     const itemNameFormatted = formatItemName(itemNameInput.val());
@@ -573,7 +585,6 @@ function handleAddingItem(e)
     let itemQuantity, prependedQuantityOperator = "";
     let itemQuantityEquation = itemQuantityInput.val().trim();
     // only want to separate starting operator if the item already exists (if the item doesn't exist, the whole quantity should be evaluated as one equation)
-    // TODO -- I think .has is a set/map function
     if(items.has(itemNameFormatted))
     {
         for(let operator of operators)
@@ -615,7 +626,7 @@ function handleAddingItem(e)
 
 class Item
 {
-    static fieldsToOmitFromLocalStorage = ["customQuantity", "customPriceOrMultiplier", "isSelected"];
+    static fieldsToOmitFromLocalStorage = new Set(["customQuantity", "customPriceOrMultiplier", "isSelected"]);
     constructor(name, quantity, url, priceOrMultiplier, maxPrice)
     {
         this.name = name;
@@ -1357,7 +1368,7 @@ function updateFuzzyMatches()
             // TODO -- I need to standardise all of my arrow functions; particularly, I need to decide whether to always include the () even for single parameter, and I need to determine whether it is a good idea to have arrow functions like this that are a single line (without {}) which calls a function (I don't know how "proper" this is, and it could easily lead to accidentally forgetting the () =>, causing it to misbehave)
             // TODO -- should I keep the matches empty after the user selects one (until they start typing again)?
             if(!customParams || !customParams.usedKeyboard) // don't want to do this if the user selected a match using the keyboard via 1-9,0
-                $(document).one("mouseup", () => itemNameInput.trigger("select"));
+                $(document).one("mouseup", () => itemNameInput.trigger("focus"));
         });
 
         const p = document.createElement("p");
@@ -1413,12 +1424,16 @@ function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded)
     const abbreviationInput = document.createElement("input");
     const abbreviationInputSelector = $(abbreviationInput);
     abbreviationInputSelector.on("change", handleAbbreviationChange);
+    abbreviationInput.type = "text";
+    abbreviationInput.style.maxWidth = "8em";
     abbreviationInput.value = abbreviation;
     abbreviationInput.dataset.previousValue = abbreviation;
 
     const abbreviationExpandedInput = document.createElement("input");
     const abbreviationExpandedInputSelector = $(abbreviationExpandedInput);
     abbreviationExpandedInputSelector.on("change", handleAbbreviationChange);
+    abbreviationExpandedInput.type = "text";
+    abbreviationExpandedInput.style.maxWidth = "8em";
     abbreviationExpandedInput.value = abbreviationExpanded;
     // abbreviationExpandedInput.dataset.previousValue = abbreviationExpanded;
 
@@ -1527,7 +1542,8 @@ function loadAllFromLocalStorage()
     const sBottomText = localStorage.getItem("bottomText");
     bottomText[0].innerText = sBottomText ?? "Partials Accepted"; // just like the abbreviations, I give a "reasonable" default
 
-    const sItemsPerRow = localStorage.getItem("itemsPerRow") ?? 8; // default 8
+    // clientWidth found from https://stackoverflow.com/questions/1248081/how-to-get-the-browser-viewport-dimensions
+    const sItemsPerRow = localStorage.getItem("itemsPerRow") ?? Math.min(Math.floor(document.documentElement.clientWidth / 110), 8); // default up to 8 (however much fits; the exact calculation for the width a cell takes up is 8 + ct*100 + (ct-1)*10  AKA  110*ct - 2, but I rounded it slightly)
     itemsPerRowSlider.val(sItemsPerRow);
     itemsPerRowLabel.text(sItemsPerRow);
     itemsPerRow = sItemsPerRow;
@@ -1560,12 +1576,32 @@ function saveAllToLocalStorage()
 
 function saveItemsToLocalStorage()
 {
-    localStorage.setItem("items", JSON.stringify([...items], (key, value) => Item.fieldsToOmitFromLocalStorage.includes(key) ? undefined : value));
+    localStorage.setItem("items", JSON.stringify([...items], (key, value) => Item.fieldsToOmitFromLocalStorage.has(key) ? undefined : value));
 }
 
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.7", `Features:
+- Upon your first time ever using the site, the items per row count now defaults to whatever will comfortably fit on screen for the user (up to a max of 8 DEFAULT); this will not affect you if you have used the site before
+- Clicking the bottom text now (in addition to already focusing the setting to modify it) additionally scrolls to the setting to ensure that it is on screen (especially on mobile)
+
+UI Changes:
+- Made buttons and inputs look the same across all platforms
+- Added a submit button for adding/modifying items (since many people were confused by simply pressing enter to submit; that way still works, this is just another way of submitting the changes)
+- Made formatting look the same across all platforms as well
+- Made the UI/page scale up to the width of phone screens so that it isn't so tiny
+- Decreased the size of input boxes (and made it relative to the default font size being used, which is dependent on the device; iOS devices are forced to 16px, since that's what iOS requires for font size in order to not zoom in when focusing an input)
+- Made selecting a fuzzy search result/match not highlight the new text (instead putting the cursor at the end of the word(s))
+- Buttons that get wrapped to the next line (most noticeable on smaller screens, i.e. mobile phones) now have a gap between them, making it look less crowded/bad
+- Improved the layout/styling of the settings overlay (input boxes now fit properly to the dimensions of the overlay dependant on how large your device is, the abbreviation mappings table can't take up too much of the screen anymore which allows for easily scrolling to the rest of the settings on mobile)
+- Ensured that the contact overlay always has a reasonable width (since it is so small)
+
+Bug Fixes:
+- Fixed issues with the bottom text in the generated image on android
+
+Misc:
+- minor code improvements`],
     ["v2.6", `Major Fix:
 - Copy image button (finally) works on mobile!  It should automatically copy the image just by clicking the button.  If it does not (if you still get a popup saying copy failed), please click the "Contact" button and let me know, since that shouldn't be happening.`],
     ["v2.5", `Features:
@@ -1786,6 +1822,7 @@ function setUpChangelog()
     changelogOverlay.inner.append(changes.flatMap(elem => [elem, document.createElement("hr")]).slice(0, -1));
 }
 
+// TODO -- I might want to put all of the local storage-related calls in wrapper functions in Persist.js
 function handleVersionChange()
 {
     const latestVersion = changelog.keys().next().value;

@@ -1,6 +1,7 @@
 // There are more operators than the ones here technically supported by math.js, but I feel like these are all the "reasonable" ones to support for the automatic prepending of the old quantity/custom quantity ( https://mathjs.org/docs/expressions/syntax.html )
+// TODO -- I could theoretically make this a set, but that's probably not a good idea since the "keys" have differing lengths and I'm just looking for whether a given equation string starts with one of these keys
 const operators = ['+', '-', '*', '/', '^', '%', "mod", '&', '|', "<<", ">>>", ">>"]; // >>> should be before >> to ensure the full operator gets removed then readded later (if >> was first, ">>> 5" would only remove the first 2 '>' leaving "> 5")
-function handleAddingItem(e)
+function handleAddingItem(e, usedSubmitButton = false)
 {
     // only want the name box to have the invalid red border until the user starts typing again (tabbing into this textbox also cancels it; unfortunately, this gets removed almost immediately if the user starts typing right after pressing enter, since it takes a bit of time for the fetch to occur and for the invalid class to be added, if needed)
     if(itemNameInput.hasClass("invalid"))
@@ -8,7 +9,7 @@ function handleAddingItem(e)
 
 
     // TODO -- might want to be using e.key instead
-    if(e.code !== "Enter")
+    if(!usedSubmitButton && e.code !== "Enter")
         return;
 
     const itemNameFormatted = formatItemName(itemNameInput.val());
@@ -18,7 +19,6 @@ function handleAddingItem(e)
     let itemQuantity, prependedQuantityOperator = "";
     let itemQuantityEquation = itemQuantityInput.val().trim();
     // only want to separate starting operator if the item already exists (if the item doesn't exist, the whole quantity should be evaluated as one equation)
-    // TODO -- I think .has is a set/map function
     if(items.has(itemNameFormatted))
     {
         for(let operator of operators)
@@ -60,7 +60,7 @@ function handleAddingItem(e)
 
 class Item
 {
-    static fieldsToOmitFromLocalStorage = ["customQuantity", "customPriceOrMultiplier", "isSelected"];
+    static fieldsToOmitFromLocalStorage = new Set(["customQuantity", "customPriceOrMultiplier", "isSelected"]);
     constructor(name, quantity, url, priceOrMultiplier, maxPrice)
     {
         this.name = name;
@@ -802,7 +802,7 @@ function updateFuzzyMatches()
             // TODO -- I need to standardise all of my arrow functions; particularly, I need to decide whether to always include the () even for single parameter, and I need to determine whether it is a good idea to have arrow functions like this that are a single line (without {}) which calls a function (I don't know how "proper" this is, and it could easily lead to accidentally forgetting the () =>, causing it to misbehave)
             // TODO -- should I keep the matches empty after the user selects one (until they start typing again)?
             if(!customParams || !customParams.usedKeyboard) // don't want to do this if the user selected a match using the keyboard via 1-9,0
-                $(document).one("mouseup", () => itemNameInput.trigger("select"));
+                $(document).one("mouseup", () => itemNameInput.trigger("focus"));
         });
 
         const p = document.createElement("p");
