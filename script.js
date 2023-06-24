@@ -67,6 +67,7 @@ let abbreviationMapping = new Map([
     ["rcoal", "refined coal"],
     ["gcheese", "goat cheese"]
 ]);
+let isActivelyCopyingImage = false;
 
 
 /* -------- scripts/Init.js -------- */
@@ -119,14 +120,14 @@ $(document).ready(() =>
     fuzzyMatchesHolder = $("#fuzzyMatchesHolder");
 
 
-    itemsPerRowSlider.on("input",
-        (event) =>
-        {
-            itemsPerRow = event.target.value;
-            itemsPerRowLabel.text(itemsPerRow);
-            updateItemLayout();
-        }
-    );
+    itemsPerRowSlider.on("input", (event) =>
+    {
+        itemsPerRow = parseInt(event.target.value); // must convert to integer/number (since I do + calculations with it and don't want it to concat like a string)
+        itemsPerRowLabel.text(itemsPerRow);
+        updateItemLayout();
+
+        rescaleScreenshotRegion();
+    });
 
 
     itemNameInput.on("focus", updateFuzzyMatches);
@@ -243,6 +244,9 @@ $(document).ready(() =>
         bottomText[0].innerText = event.target.value;
 
         saveAllToLocalStorage();
+
+        // I only do this on change and not on input because I fear that it would cause too much lag/input delay from processing this
+        rescaleScreenshotRegion();
     });
     bottomText.on("click", () =>
     {
@@ -542,6 +546,11 @@ $(document).ready(() =>
     // TODO -- maybe make this some class and/or css media query-related thing?
     if(isRunningIOS())
         $("input, textarea").css("font-size", "16px");
+
+
+    // rescale screenshot region whenever window/page is resized (also invokes it for the first time immediately to ensure it starts scaled properly)
+    $(window).on("resize", rescaleScreenshotRegion);
+    rescaleScreenshotRegion();
 });
 
 
@@ -583,6 +592,11 @@ function handleAddingItem(e, usedSubmitButton = false)
     if(itemNameInput.hasClass("invalid"))
         itemNameInput.removeClass("invalid");
 
+
+    // Don't want to accept changes while trying to copy the image
+    // TODO -- I don't handle actively copying image yet for anything related to price calculation mode; maybe I should do that?
+    if(isActivelyCopyingImage)
+        return;
 
     // TODO -- might want to be using e.key instead
     if(!usedSubmitButton && e.code !== "Enter")
@@ -1002,6 +1016,9 @@ function updateItemLayout()
 
     if(shouldShowSelection)
         updateTotalPrice();
+
+    // I don't want to call this every time, since I feel like it slows down everything (I instead only call it when relevant things resize [items per row count, window size, bottom text])
+    // rescaleScreenshotRegion();
 }
 
 function formatItemPriceLabel(priceOrMultiplier)
@@ -1012,7 +1029,6 @@ function formatItemPriceLabel(priceOrMultiplier)
 }
 
 
-let isActivelyCopyingImage = false;
 function copyImageToClipboard()
 {
     if(isActivelyCopyingImage)
@@ -1026,8 +1042,9 @@ function copyImageToClipboard()
     if(!$(".watermark").length) // only append if the watermark always visible on screen didn't get removed
         screenshotRegion.append(createdBy);
 
-    copyImageLoadingWheel.prop("hidden", false);
-
+    copyImageLoadingWheel.prop("hidden", false); // show loading wheel
+    screenshotRegion[0].style.transform = ""; // temporarily remove screenshot region scaling so that image isn't messed up
+    itemsPerRowSlider.prop("disabled", true); // temporarily disable items per row slider
 
     let screenshotBlob;
     let clipboardWrittenPromise;
@@ -1055,6 +1072,7 @@ function copyImageToClipboard()
     }
     else // not iOS
     {
+        // htmlToImage.toBlob(..., {canvasWidth: ..., canvasHeight: ..., width: ..., height: ...}) // there are options for canvas Width/Height, along with node's Width/Height, but they aren't really what I'm looking for (zooming out far on the page itself still modifies the scaling of everything)
         clipboardWrittenPromise = htmlToImage.toBlob(screenshotRegion[0])
             .then(blob => new ClipboardItem({"image/png": screenshotBlob = blob})) // also stores the blob in case the error is caught later
             .then(clipboardItem => navigator.clipboard.write([clipboardItem]));
@@ -1089,6 +1107,8 @@ function copyImageToClipboard()
             isActivelyCopyingImage = false;
 
             copyImageLoadingWheel.prop("hidden", true);
+            rescaleScreenshotRegion(); // restore screenshot region's scaling
+            itemsPerRowSlider.prop("disabled", false);
         });
 }
 
@@ -1320,7 +1340,7 @@ async function prepareAllItemNames()
 // gotten from https://hayday.fandom.com/wiki/Supplies (if I got the images for these the same way as I did for everything else, there would be a ton of building images listed as items)
 const suppliesNames = ["Axe", "Dynamite", "Saw", "Shovel", "TNT Barrel", "Pickaxe", "Bolt", "Brick", "Duct Tape", "Hammer", "Hand Drill", "Nail", "Paint Bucket", "Plank", "Screw", "Stone Block", "Tar Bucket", "Wood Panel", "Land Deed", "Mallet", "Map Piece", "Marker Stake"];
 // extraneous "item"/image names (due to how the item names are fetched) that shouldn't be included; "Honey Mask" is a duplicate of "Honey Face Mask"
-const nameBlacklist = new Set(["Chicken Feed", "Cow Feed", "Pig Feed", "Sheep Feed", "Red Lure", "Green Lure", "Blue Lure", "Purple Lure", "Gold Lure", "Fishing Net", "Mystery Net", "Goat Feed", "Lobster Trap", "Duck Trap", "Honey Mask", "Field", "Apple Tree", "Shop Icon", "Coins", "Experience"]);
+const nameBlacklist = new Set(["Chicken Feed", "Cow Feed", "Pig Feed", "Sheep Feed", "Red Lure", "Green Lure", "Blue Lure", "Purple Lure", "Gold Lure", "Fishing Net", "Mystery Net", "Goat Feed", "Lobster Trap", "Duck Trap", "Honey Mask", "Field", "Apple Tree", "Shop Icon", "Coins", "Experience", "Caffè Latte", "Caffè Mocha"]);
 async function getAllItemNames()
 {
     const fetchPortion = (pageName) =>
@@ -1417,6 +1437,22 @@ function createFailedCopyNotification()
     notification.classList.add("notification", "notificationFail");
     $(notification).on("animationend", notification.remove);
     document.body.appendChild(notification);
+}
+
+
+// TODO -- I might want to eventually be rescaling the cells, though that would be a lot of work to modify all the css
+function rescaleScreenshotRegion()
+{
+    // If the user starts scrolling, zooming in, etc, don't want to rescale the screenshot region (I noticed this happening if a user on iOS starts scrolling in such a way where the address bar grows in size [triggering window resize])
+    if(isActivelyCopyingImage)
+        return;
+
+    // I take the min of these to ensure that everything always stays on screen (it takes into account both a longer bottom text and what the width would be if all items were in the table)
+    const heuristicFactor = document.documentElement.clientWidth / ((itemsPerRow + 1) * 110); // estimated width of table with all items in row filled in
+    const actualFactor = 0.9 * document.documentElement.clientWidth / screenshotRegion.width(); // actual calculated width of table (including bottom text)
+
+    const scaleFactor = Math.min(1, heuristicFactor, actualFactor); // 1 is included in the list of mins because I don't want to ever scale up, only down (if needed)
+    screenshotRegion[0].style.transform = `scale(${scaleFactor})`;
 }
 
 
@@ -1561,9 +1597,9 @@ function loadAllFromLocalStorage()
     const sItemsPerRow = localStorage.getItem("itemsPerRow") ?? Math.min(Math.floor(document.documentElement.clientWidth / 110), 8); // default up to 8 (however much fits; the exact calculation for the width a cell takes up is 8 + ct*100 + (ct-1)*10  AKA  110*ct - 2, but I rounded it slightly)
     itemsPerRowSlider.val(sItemsPerRow);
     itemsPerRowLabel.text(sItemsPerRow);
-    itemsPerRow = sItemsPerRow;
+    itemsPerRow = parseInt(sItemsPerRow); // must "type cast" since localstorage doesn't retain type
 
-    textListSeparatorSelectedRadio = localStorage.getItem("textListSeparatorSelectedRadio") ?? 0;
+    textListSeparatorSelectedRadio = parseInt(localStorage.getItem("textListSeparatorSelectedRadio") ?? 0); // don't really need to do this, but it would be best to treat it as an integer/number
     const sTextListCustomSeparator = localStorage.getItem("textListCustomSeparator") ?? "";
     textListSeparatorCustomRadio.val(sTextListCustomSeparator);
     textListCustomSeparatorInput.val(sTextListCustomSeparator);
@@ -1582,7 +1618,7 @@ function saveAllToLocalStorage()
     localStorage.setItem("abbreviationMapping", JSON.stringify([...abbreviationMapping]));
     localStorage.setItem("bottomText", bottomText[0].innerText); // must use innerText for newlines to be handled properly
     // localStorage.setItem("bottomText", bottomTextSettingInput.val()); // can just use the setting input's value instead, though maybe I should keep it consistent with the loadAll, due to the way I load it into the bottom text then into the setting
-    localStorage.setItem("itemsPerRow", itemsPerRowSlider.val());
+    localStorage.setItem("itemsPerRow", itemsPerRow);
     localStorage.setItem("textListSeparatorSelectedRadio", textListSeparatorSelectedRadio);
     localStorage.setItem("textListCustomSeparator", textListCustomSeparatorInput.val());
     localStorage.setItem("textListFormat", textListFormatInput.val());
@@ -1597,6 +1633,15 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.9", `UI Changes:
+- The item grid/region now scales to fit on your screen/display without needing to scroll/zoom (this does not affect the generated image since the item grid's scale temporarily gets reset while generating the image).  It also takes into account the bottom text being wider than the item grid.
+
+Bug Fixes:
+- Preserved numerical types when loading from local storage (this didn't cause issues in any live version of the tool/site)
+- Disabled changing the number of items per row and adding/modifying/deleting items while the image is in the process of being generated
+
+Misc:
+- Removed duplicated item names with accented name variant (Caffè Latte and Caffè Mocha; the non-accented versions of the names still work, I just removed the accented variants)`],
     ["v2.8.1", `Bug Fixes:
 - Made delete button do nothing when name input is empty (previously, it would set the quantity to 0; this isn't exactly a bug)
 - finally fixed the weird gap between fuzzy matches on mobile

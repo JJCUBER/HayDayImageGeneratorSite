@@ -40,4 +40,5 @@ let abbreviationMapping = new Map([
     ["rcoal", "refined coal"],
     ["gcheese", "goat cheese"]
 ]);
+let isActivelyCopyingImage = false;
 

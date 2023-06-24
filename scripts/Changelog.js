@@ -1,4 +1,13 @@
 const changelog = new Map([
+    ["v2.9", `UI Changes:
+- The item grid/region now scales to fit on your screen/display without needing to scroll/zoom (this does not affect the generated image since the item grid's scale temporarily gets reset while generating the image).  It also takes into account the bottom text being wider than the item grid.
+
+Bug Fixes:
+- Preserved numerical types when loading from local storage (this didn't cause issues in any live version of the tool/site)
+- Disabled changing the number of items per row and adding/modifying/deleting items while the image is in the process of being generated
+
+Misc:
+- Removed duplicated item names with accented name variant (Caffè Latte and Caffè Mocha; the non-accented versions of the names still work, I just removed the accented variants)`],
     ["v2.8.1", `Bug Fixes:
 - Made delete button do nothing when name input is empty (previously, it would set the quantity to 0; this isn't exactly a bug)
 - finally fixed the weird gap between fuzzy matches on mobile

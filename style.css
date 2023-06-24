@@ -1,3 +1,8 @@
+html, body
+{
+    overflow-x: hidden;
+}
+
 body
 {
     background-color: #fff8b8;
@@ -247,6 +252,8 @@ td.selected:hover
 {
     background-color: inherit; /* needed for the html-to-image library to have the right background (it seems to have CORS issues in reading my styl.css file) */
     display: inline-block; /* makes the screenshotRegion wrap tightly around its children */
+
+    transform-origin: top left;
 }
 
 

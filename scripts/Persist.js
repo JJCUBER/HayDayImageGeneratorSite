@@ -21,9 +21,9 @@ function loadAllFromLocalStorage()
     const sItemsPerRow = localStorage.getItem("itemsPerRow") ?? Math.min(Math.floor(document.documentElement.clientWidth / 110), 8); // default up to 8 (however much fits; the exact calculation for the width a cell takes up is 8 + ct*100 + (ct-1)*10  AKA  110*ct - 2, but I rounded it slightly)
     itemsPerRowSlider.val(sItemsPerRow);
     itemsPerRowLabel.text(sItemsPerRow);
-    itemsPerRow = sItemsPerRow;
+    itemsPerRow = parseInt(sItemsPerRow); // must "type cast" since localstorage doesn't retain type
 
-    textListSeparatorSelectedRadio = localStorage.getItem("textListSeparatorSelectedRadio") ?? 0;
+    textListSeparatorSelectedRadio = parseInt(localStorage.getItem("textListSeparatorSelectedRadio") ?? 0); // don't really need to do this, but it would be best to treat it as an integer/number
     const sTextListCustomSeparator = localStorage.getItem("textListCustomSeparator") ?? "";
     textListSeparatorCustomRadio.val(sTextListCustomSeparator);
     textListCustomSeparatorInput.val(sTextListCustomSeparator);
@@ -42,7 +42,7 @@ function saveAllToLocalStorage()
     localStorage.setItem("abbreviationMapping", JSON.stringify([...abbreviationMapping]));
     localStorage.setItem("bottomText", bottomText[0].innerText); // must use innerText for newlines to be handled properly
     // localStorage.setItem("bottomText", bottomTextSettingInput.val()); // can just use the setting input's value instead, though maybe I should keep it consistent with the loadAll, due to the way I load it into the bottom text then into the setting
-    localStorage.setItem("itemsPerRow", itemsPerRowSlider.val());
+    localStorage.setItem("itemsPerRow", itemsPerRow);
     localStorage.setItem("textListSeparatorSelectedRadio", textListSeparatorSelectedRadio);
     localStorage.setItem("textListCustomSeparator", textListCustomSeparatorInput.val());
     localStorage.setItem("textListFormat", textListFormatInput.val());
