@@ -1,4 +1,6 @@
 const changelog = new Map([
+    ["v2.9.2", `Bug Fixes:
+- Fixed being able to scroll the page behind an overlay (this was a regression)`],
     ["v2.9.1", `Features:
 - the total quantity of selected items is now shown when in price calculation mode
 

@@ -114,14 +114,15 @@ $(document).ready(() =>
     {
         settingsOverlay.overlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
-        $("body").css("overflow", "hidden");
+        // have to set both due to how I'm hiding overflow-x via css (this might not actually be required; TODO -- see if the css file actually needs html and body to both have overflow set; it seems like both should be set to prevent running into issues though: https://stackoverflow.com/questions/41506456/why-body-overflow-not-working )
+        $("html, body").css("overflow-y", "hidden");
         // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
         screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
     settingsOverlay.hideButton.on("click", () =>
     {
         settingsOverlay.overlay.prop("hidden", true);
-        $("body").css("overflow", "visible");
+        $("html, body").css("overflow-y", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
     settingsOverlay.background.on("click", () =>
@@ -409,14 +410,14 @@ $(document).ready(() =>
     {
         changelogOverlay.overlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
-        $("body").css("overflow", "hidden");
+        $("html, body").css("overflow-y", "hidden");
         // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
         screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
     changelogOverlay.hideButton.on("click", () =>
     {
         changelogOverlay.overlay.prop("hidden", true);
-        $("body").css("overflow", "visible");
+        $("html, body").css("overflow-y", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
     changelogOverlay.background.on("click", () =>
@@ -431,7 +432,7 @@ $(document).ready(() =>
     failedCopyOverlay.hideButton.on("click", () =>
     {
         failedCopyOverlay.overlay.prop("hidden", true);
-        $("body").css("overflow", "visible");
+        $("html, body").css("overflow-y", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
     failedCopyOverlay.background.on("click", () =>
@@ -445,14 +446,14 @@ $(document).ready(() =>
     {
         contactOverlay.overlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
-        $("body").css("overflow", "hidden");
+        $("html, body").css("overflow-y", "hidden");
         // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
         screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
     contactOverlay.hideButton.on("click", () =>
     {
         contactOverlay.overlay.prop("hidden", true);
-        $("body").css("overflow", "visible");
+        $("html, body").css("overflow-y", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
     contactOverlay.background.on("click", () =>

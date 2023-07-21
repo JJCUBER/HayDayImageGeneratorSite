@@ -511,7 +511,7 @@ function copyImageToClipboard()
 
                 failedCopyOverlay.overlay.prop("hidden", false);
                 // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
-                $("body").css("overflow", "hidden");
+                $("html, body").css("overflow-y", "hidden");
                 // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
                 screenshotRegion.css("margin-right", "calc(100vw - 100%)");
             }
