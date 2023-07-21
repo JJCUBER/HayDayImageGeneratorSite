@@ -208,6 +208,8 @@ td.selected:hover
     right: 5px;
 
     font-size: 50px;
+
+    transition: opacity 0.2s;
 }
 .customQuantityLabel
 {
@@ -217,6 +219,8 @@ td.selected:hover
     font-size: 25px;
 
     --labelOutlineColor: 255, 0, 0;
+
+    animation: fadeIn 0.2s forwards;
 }
 
 .priceLabel
@@ -226,6 +230,8 @@ td.selected:hover
     left: 2px;
 
     font-size: 30px;
+
+    transition: opacity 0.2s;
 }
 .customPriceLabel
 {
@@ -236,6 +242,8 @@ td.selected:hover
     font-size: 25px;
     /* I don't know why I used to have this yellow, but if I decide to uncomment this again, the custom quantity label should also have this (which means I should apply this to .customLabel) */
     /* color: yellow; */
+
+    animation: fadeIn 0.2s forwards;
 }
 
 .coin
@@ -374,7 +382,7 @@ td.selected:hover
     height: 100%;
 }
 
-/* animates when the list of matches goes from > non-empty */
+/* animates when the list of matches goes from empty -> non-empty */
 #fuzzyMatchesHolder:not(:empty)
 {
     animation: fadeIn 0.2s forwards;

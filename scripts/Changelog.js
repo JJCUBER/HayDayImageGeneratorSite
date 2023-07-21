@@ -1,4 +1,13 @@
 const changelog = new Map([
+    ["v2.9.1", `Features:
+- the total quantity of selected items is now shown when in price calculation mode
+
+UI Changes:
+- quantity and price labels now fade in/out
+
+Note:
+- Sorry for the lack of updates recently.  I have been quite busy IRL these past few weeks.  I still have plans to add tons of features over time, but development might be a bit slower than it used to be.  Regardless, feel free to join the discord (by clicking the "Contact" button) to suggest new features and/or to ask for help!
+- There is now a full text-based tutorial and a video tutorial of how to use this site (it is in the discord server, though I will eventually incorporate it into the site).`],
     ["v2.9", `UI Changes:
 - The item grid/region now scales to fit on your screen/display without needing to scroll/zoom (this does not affect the generated image since the item grid's scale temporarily gets reset while generating the image).  It also takes into account the bottom text being wider than the item grid.
 

@@ -696,7 +696,9 @@ function updateTotalPrice()
     const totalPriceInItems = +(totalPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
     const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
 
-    totalPriceHolder.html(`${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;">`);
+    const selectedCount = getSelectedCount();
+
+    totalPriceHolder.html(`${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} items)`);
 }
 
 
@@ -868,5 +870,17 @@ function rescaleScreenshotRegion()
 
     const scaleFactor = Math.min(1, heuristicFactor, actualFactor); // 1 is included in the list of mins because I don't want to ever scale up, only down (if needed)
     screenshotRegion[0].style.transform = `scale(${scaleFactor})`;
+}
+
+function getSelectedCount()
+{
+    let count = 0;
+    for(let item of [...items.values()])
+    {
+        if(item.isSelected)
+            count += item.customQuantity ?? item.quantity;
+    }
+
+    return count;
 }
 

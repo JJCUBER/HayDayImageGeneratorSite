@@ -1281,7 +1281,9 @@ function updateTotalPrice()
     const totalPriceInItems = +(totalPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
     const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
 
-    totalPriceHolder.html(`${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;">`);
+    const selectedCount = getSelectedCount();
+
+    totalPriceHolder.html(`${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} items)`);
 }
 
 
@@ -1453,6 +1455,18 @@ function rescaleScreenshotRegion()
 
     const scaleFactor = Math.min(1, heuristicFactor, actualFactor); // 1 is included in the list of mins because I don't want to ever scale up, only down (if needed)
     screenshotRegion[0].style.transform = `scale(${scaleFactor})`;
+}
+
+function getSelectedCount()
+{
+    let count = 0;
+    for(let item of [...items.values()])
+    {
+        if(item.isSelected)
+            count += item.customQuantity ?? item.quantity;
+    }
+
+    return count;
 }
 
 
@@ -1633,6 +1647,15 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.9.1", `Features:
+- the total quantity of selected items is now shown when in price calculation mode
+
+UI Changes:
+- quantity and price labels now fade in/out
+
+Note:
+- Sorry for the lack of updates recently.  I have been quite busy IRL these past few weeks.  I still have plans to add tons of features over time, but development might be a bit slower than it used to be.  Regardless, feel free to join the discord (by clicking the "Contact" button) to suggest new features and/or to ask for help!
+- There is now a full text-based tutorial and a video tutorial of how to use this site (it is in the discord server, though I will eventually incorporate it into the site).`],
     ["v2.9", `UI Changes:
 - The item grid/region now scales to fit on your screen/display without needing to scroll/zoom (this does not affect the generated image since the item grid's scale temporarily gets reset while generating the image).  It also takes into account the bottom text being wider than the item grid.
 
