@@ -429,7 +429,7 @@ function updateItemLayout()
         itemTable.append(tableRow);
     }
 
-    if(shouldShowSelection)
+    if(shouldShowSelection || getIsPriceShownInScreenshot())
         updateTotalPrice();
 
     // I don't want to call this every time, since I feel like it slows down everything (I instead only call it when relevant things resize [items per row count, window size, bottom text])
@@ -607,7 +607,8 @@ async function ensureItemsHaveMaxPriceSet()
         shouldSave = true;
 
         // updates the total price along the way if currently in price calculation mode (I'm doing this instead of only doing it once at the end so that the user can see the price updating as it gets loaded)
-        if(getIsInPriceCalculationMode())
+        // TODO -- I don't think I need || shouldShow... here currently, though I might want/need it if I allow for persistent selections at some point
+        if(getIsInPriceCalculationMode() || getIsPriceShownInScreenshot())
             updateTotalPrice();
     }
 
@@ -637,6 +638,7 @@ function calculateTotalSelectedPrice()
     let equations = [];
     // TODO -- I should instead filter this BEFORE sorting (doesn't change anything functionally, it's just more performant that way)
     // we go through it in quantity descending order to make the equation be in the same order as the items in the grid
+    // TODO -- now that this function gets called from updateItemLayout() whenever showing price in screenshot is enabled, I should probably be caching itemsSortedDescending
     const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
     let message, isError = false;
     for(let item of itemsSortedDescending)
@@ -683,7 +685,7 @@ function calculateTotalSelectedPrice()
     return total;
 }
 
-// it might be better to check whether in price calculation mode here instead of everywhere before calling this function, though that might be slower in scenarios where I have the state (of whether being in price calculation mode or not) cached.
+// TODO -- it might be better to check whether in price calculation mode here (and/or if price is shown in the screenshot) instead of everywhere before calling this function, though that might be slower in scenarios where I have the state (of whether being in price calculation mode or not) cached.
 function updateTotalPrice()
 {
     const totalPrice = calculateTotalSelectedPrice();
@@ -698,13 +700,25 @@ function updateTotalPrice()
 
     const selectedCount = getSelectedCount();
 
-    totalPriceHolder.html(`${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} items)`);
+    const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} items)`;
+
+    if(getIsInPriceCalculationMode())
+        totalPriceHolder.html(totalPriceHTML);
+
+    if(getIsPriceShownInScreenshot())
+        screenshotPriceHolder.html(totalPriceHTML);
 }
 
 
 function getIsInPriceCalculationMode()
 {
     return !totalPriceArea.is("[hidden]");
+}
+
+function getIsPriceShownInScreenshot()
+{
+    // TODO -- for this and other checkbox-related settings, should I be looking at the settings themselves for the state of things, or should I be looking at the elements that are set as visible, hidden, etc. like what I do right here?
+    return !screenshotPriceHolder.prop("hidden");
 }
 
 

@@ -9,6 +9,7 @@ $(document).ready(() =>
 
     bottomText = $("#bottomText");
     screenshotRegion = $("#screenshotRegion");
+    screenshotPriceHolder = $("#screenshotPriceHolder");
 
     settingsOverlay = new Overlay("settingsOverlay", "showButton");
 
@@ -19,6 +20,7 @@ $(document).ready(() =>
     textListSeparatorCustomRadio = $("#textListSeparatorCustomRadio");
     textListFormatInput = $("#textListFormatInput");
     priceCalculationItemInput = $("#priceCalculationItemInput");
+    showPriceInScreenshotCheckBox = $("#showPriceInScreenshotCheckBox");
 
     priceCalculationModeStateSpan = $("#priceCalculationModeStateSpan");
 
@@ -242,11 +244,24 @@ $(document).ready(() =>
 
         priceCalculationItem = new Item(itemNameFormatted, undefined, itemUrl, undefined, itemMaxPrice);
 
-        updateTotalPrice();
+        // TODO -- it might be better to just always make sure price gets immediately updated tbh (although, enabling price calc mode or showing of the price in screenshot will run update total price themselves)
+        if(getIsInPriceCalculationMode() || getIsPriceShownInScreenshot())
+            updateTotalPrice();
         saveAllToLocalStorage();
     });
     // want to make it fire immediately the first time; I couldn't do this inside the load all function since this must be set after the load all and after the coin image url is fetched
     priceCalculationItemInput.trigger("change");
+
+
+    showPriceInScreenshotCheckBox.on("click", () =>
+    {
+        let wasShowing = getIsPriceShownInScreenshot();
+        screenshotPriceHolder.prop("hidden", wasShowing);
+
+        if(!wasShowing)
+            updateTotalPrice();
+        saveAllToLocalStorage();
+    });
 
     $("#copyAsTextListButton").on("click", copyAsTextListToClipboard);
 

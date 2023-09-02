@@ -1,4 +1,12 @@
 const changelog = new Map([
+    ["v2.10", `Features:
+- Added setting to show selected price in the generated image (defaults to being enabled)
+
+UI:
+- Made the selected price information fade in when toggled on by the setting
+
+Misc:
+- Minor code/performance improvements`],
     ["v2.9.2", `Bug Fixes:
 - Fixed being able to scroll the page behind an overlay (this was a regression)`],
     ["v2.9.1", `Features:
