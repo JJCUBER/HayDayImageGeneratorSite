@@ -176,7 +176,7 @@ $(document).ready(() =>
     });
 
 
-    const coinImagePromise = getImageUrl("Coin", 28)
+    const coinImagePromise = getImageUrl("Coin")
         .then(imageUrl => coinImageUrl = imageUrl)
         .catch(e => console.log("Failed to get coin image url --", e));
 
@@ -838,10 +838,11 @@ function handleSpecialNames(itemName)
     return specialNameMapping.get(itemName) ?? itemName;
 }
 
-function getImageUrl(itemNameTitleSnakeCase, imageWidth = 100)
+function getImageUrl(itemNameTitleSnakeCase)
 {
     // https://www.mediawiki.org/wiki/API:Imageinfo
-    return fetch(`https://hayday.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:${itemNameTitleSnakeCase}.png&iiurlwidth=${imageWidth}&format=json&origin=*`)
+    // scaled down images don't work cross-site (it will work locally, but not on the hosted site)
+    return fetch(`https://hayday.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:${itemNameTitleSnakeCase}.png&format=json&origin=*`)
         .then(response => response.json())
         .then(data =>
         {
@@ -850,7 +851,8 @@ function getImageUrl(itemNameTitleSnakeCase, imageWidth = 100)
             const pageId = Object.keys(pages)[0];
             // for some reason, this works fine but the resultant wikia static image url yields a 404 from github pages ONLY when scaled down
             // return pages[pageId].imageinfo[0].thumburl;
-            return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
+            //return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
+            return pages[pageId].imageinfo[0].url.split("\/revision\/")[0]; // or split on "\/revision\/latest", but I'm worried that something might change at some point
         });
 
 }
@@ -1687,6 +1689,8 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.10.1", `Bug Fixes:
+- Fixed some item urls (or only one?) no longer working (seemingly caused by a change in how the wiki api schema is for certain edge cases)`],
     ["v2.10", `Features:
 - Added setting to show selected price in the generated image (defaults to being enabled)
 

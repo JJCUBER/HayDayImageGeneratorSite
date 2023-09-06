@@ -1,4 +1,6 @@
 const changelog = new Map([
+    ["v2.10.1", `Bug Fixes:
+- Fixed some item urls (or only one?) no longer working (seemingly caused by a change in how the wiki api schema is for certain edge cases)`],
     ["v2.10", `Features:
 - Added setting to show selected price in the generated image (defaults to being enabled)
 

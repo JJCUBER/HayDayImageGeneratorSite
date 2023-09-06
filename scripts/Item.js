@@ -237,10 +237,11 @@ function handleSpecialNames(itemName)
     return specialNameMapping.get(itemName) ?? itemName;
 }
 
-function getImageUrl(itemNameTitleSnakeCase, imageWidth = 100)
+function getImageUrl(itemNameTitleSnakeCase)
 {
     // https://www.mediawiki.org/wiki/API:Imageinfo
-    return fetch(`https://hayday.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:${itemNameTitleSnakeCase}.png&iiurlwidth=${imageWidth}&format=json&origin=*`)
+    // scaled down images don't work cross-site (it will work locally, but not on the hosted site)
+    return fetch(`https://hayday.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:${itemNameTitleSnakeCase}.png&format=json&origin=*`)
         .then(response => response.json())
         .then(data =>
         {
@@ -249,7 +250,8 @@ function getImageUrl(itemNameTitleSnakeCase, imageWidth = 100)
             const pageId = Object.keys(pages)[0];
             // for some reason, this works fine but the resultant wikia static image url yields a 404 from github pages ONLY when scaled down
             // return pages[pageId].imageinfo[0].thumburl;
-            return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
+            //return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
+            return pages[pageId].imageinfo[0].url.split("\/revision\/")[0]; // or split on "\/revision\/latest", but I'm worried that something might change at some point
         });
 
 }

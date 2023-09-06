@@ -103,7 +103,7 @@ $(document).ready(() =>
     });
 
 
-    const coinImagePromise = getImageUrl("Coin", 28)
+    const coinImagePromise = getImageUrl("Coin")
         .then(imageUrl => coinImageUrl = imageUrl)
         .catch(e => console.log("Failed to get coin image url --", e));
 
