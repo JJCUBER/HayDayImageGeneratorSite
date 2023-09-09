@@ -1,4 +1,6 @@
 const changelog = new Map([
+    ["v2.11.2", `UI Changes:
+- Made use of Locale a bit more consistent`],
     ["v2.11.1", `UI Improvements:
 - Made the selected items count use "item" instead of "items" when exactly 1 item is selected (ensured plurality is always correct)
 

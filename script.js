@@ -41,7 +41,7 @@ let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
 let changelogOverlay, failedCopyOverlay, contactOverlay;
 let copyImageLoadingWheel;
-let shouldShowTotalInNormalMode = false;
+let shouldShowTotalInNormalMode = false; // FIXME -- I'm starting to think more and more that this shouldn't be a variable, since the state is already completely coupled with the checkbox; adding this variable just prevents a get...() call that queries the checkbox with jquery to check if it's checked
 
 let fuzzyMatchesHolder;
 
@@ -1348,8 +1348,9 @@ function updateTotalPrice()
     const totalSelectedPriceInItemsFormatted = totalSelectedPriceInItems.toLocaleString();
 
     const selectedCount = getSelectedItemCount();
+    const selectedCountFormatted = selectedCount.toLocaleString();
 
-    const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} item${selectedCount === 1 ? "" : "s"})`;
+    const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItemsFormatted}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCountFormatted} item${selectedCount === 1 ? "" : "s"})`;
 
     const isInPriceCalculationMode = getIsInPriceCalculationMode();
 
@@ -1367,8 +1368,9 @@ function updateTotalPrice()
             const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
 
             const itemCount = getTotalItemCount();
+            const itemCountFormatted = itemCount.toLocaleString();
 
-            const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCount} item${itemCount === 1 ? "" : "s"})`;
+            const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItemsFormatted}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCountFormatted} item${itemCount === 1 ? "" : "s"})`;
             screenshotPriceHolder.html(totalPriceHTML);
         }
         else
@@ -1768,6 +1770,8 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.11.2", `UI Changes:
+- Made use of Locale a bit more consistent`],
     ["v2.11.1", `UI Improvements:
 - Made the selected items count use "item" instead of "items" when exactly 1 item is selected (ensured plurality is always correct)
 

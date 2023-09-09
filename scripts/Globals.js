@@ -14,7 +14,7 @@ let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
 let changelogOverlay, failedCopyOverlay, contactOverlay;
 let copyImageLoadingWheel;
-let shouldShowTotalInNormalMode = false;
+let shouldShowTotalInNormalMode = false; // FIXME -- I'm starting to think more and more that this shouldn't be a variable, since the state is already completely coupled with the checkbox; adding this variable just prevents a get...() call that queries the checkbox with jquery to check if it's checked
 
 let fuzzyMatchesHolder;
 

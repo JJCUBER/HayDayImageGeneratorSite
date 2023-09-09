@@ -734,8 +734,9 @@ function updateTotalPrice()
     const totalSelectedPriceInItemsFormatted = totalSelectedPriceInItems.toLocaleString();
 
     const selectedCount = getSelectedItemCount();
+    const selectedCountFormatted = selectedCount.toLocaleString();
 
-    const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} item${selectedCount === 1 ? "" : "s"})`;
+    const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItemsFormatted}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCountFormatted} item${selectedCount === 1 ? "" : "s"})`;
 
     const isInPriceCalculationMode = getIsInPriceCalculationMode();
 
@@ -753,8 +754,9 @@ function updateTotalPrice()
             const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
 
             const itemCount = getTotalItemCount();
+            const itemCountFormatted = itemCount.toLocaleString();
 
-            const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCount} item${itemCount === 1 ? "" : "s"})`;
+            const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItemsFormatted}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCountFormatted} item${itemCount === 1 ? "" : "s"})`;
             screenshotPriceHolder.html(totalPriceHTML);
         }
         else
