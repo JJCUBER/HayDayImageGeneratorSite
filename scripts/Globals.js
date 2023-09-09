@@ -3,17 +3,18 @@ let textListSeparatorSelectedRadio = 0;
 
 let itemsPerRowSlider, itemsPerRowLabel, itemNameInput, itemQuantityInput, itemPriceOrMultiplierInput, itemTable;
 let bottomText, screenshotRegion, screenshotPriceHolder;
-let settingsOverlay, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput, showPriceInScreenshotCheckBox;
+let settingsOverlay, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput, showPriceInScreenshotCheckBox, showTotalInNormalModeCheckBox;
 let priceCalculationModeStateSpan;
 let disableInPriceCalculationModeElems, disableOutsidePriceCalculationModeElems;
 let equationVisibilityStateSpan, unselectedItemsVisibilityStateSpan;
-let shouldHideUnselectedItems;
-let totalPriceArea, totalPriceHolder, totalPriceMessageHolder, totalPriceEquationHolder;
+let shouldHideUnselectedItems = false;
+let totalSelectedPriceArea, totalSelectedPriceHolder, totalSelectedPriceMessageHolder, totalSelectedPriceEquationHolder;
 let coinImageUrl;
 let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
 let changelogOverlay, failedCopyOverlay, contactOverlay;
 let copyImageLoadingWheel;
+let shouldShowTotalInNormalMode = false;
 
 let fuzzyMatchesHolder;
 

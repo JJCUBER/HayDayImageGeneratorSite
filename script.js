@@ -30,17 +30,18 @@ let textListSeparatorSelectedRadio = 0;
 
 let itemsPerRowSlider, itemsPerRowLabel, itemNameInput, itemQuantityInput, itemPriceOrMultiplierInput, itemTable;
 let bottomText, screenshotRegion, screenshotPriceHolder;
-let settingsOverlay, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput, showPriceInScreenshotCheckBox;
+let settingsOverlay, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput, showPriceInScreenshotCheckBox, showTotalInNormalModeCheckBox;
 let priceCalculationModeStateSpan;
 let disableInPriceCalculationModeElems, disableOutsidePriceCalculationModeElems;
 let equationVisibilityStateSpan, unselectedItemsVisibilityStateSpan;
-let shouldHideUnselectedItems;
-let totalPriceArea, totalPriceHolder, totalPriceMessageHolder, totalPriceEquationHolder;
+let shouldHideUnselectedItems = false;
+let totalSelectedPriceArea, totalSelectedPriceHolder, totalSelectedPriceMessageHolder, totalSelectedPriceEquationHolder;
 let coinImageUrl;
 let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
 let changelogOverlay, failedCopyOverlay, contactOverlay;
 let copyImageLoadingWheel;
+let shouldShowTotalInNormalMode = false;
 
 let fuzzyMatchesHolder;
 
@@ -94,6 +95,7 @@ $(document).ready(() =>
     textListFormatInput = $("#textListFormatInput");
     priceCalculationItemInput = $("#priceCalculationItemInput");
     showPriceInScreenshotCheckBox = $("#showPriceInScreenshotCheckBox");
+    showTotalInNormalModeCheckBox = $("#showTotalInNormalModeCheckBox");
 
     priceCalculationModeStateSpan = $("#priceCalculationModeStateSpan");
 
@@ -103,10 +105,10 @@ $(document).ready(() =>
     equationVisibilityStateSpan = $("#equationVisibilityStateSpan");
     unselectedItemsVisibilityStateSpan = $("#unselectedItemsVisibilityStateSpan");
 
-    totalPriceArea = $("#totalPriceArea");
-    totalPriceHolder = $("#totalPriceHolder");
-    totalPriceMessageHolder = $("#totalPriceMessageHolder");
-    totalPriceEquationHolder = $("#totalPriceEquationHolder");
+    totalSelectedPriceArea = $("#totalSelectedPriceArea");
+    totalSelectedPriceHolder = $("#totalSelectedPriceHolder");
+    totalSelectedPriceMessageHolder = $("#totalSelectedPriceMessageHolder");
+    totalSelectedPriceEquationHolder = $("#totalSelectedPriceEquationHolder");
 
     priceCalculationModeSelectionInfo = $("#priceCalculationModeSelectionInfo");
 
@@ -326,13 +328,24 @@ $(document).ready(() =>
     priceCalculationItemInput.trigger("change");
 
 
+    // TODO -- should I be using change event instead of click event for checkboxes (along with any input element variants)?  Resources such as https://stackoverflow.com/questions/3442322/jquery-checkbox-event-handling make it sound like click doesn't work for certain things, but they do seem to (which is likely due to how old this so question is).
     showPriceInScreenshotCheckBox.on("click", () =>
     {
         let wasShowing = getIsPriceShownInScreenshot();
         screenshotPriceHolder.prop("hidden", wasShowing);
 
+        showTotalInNormalModeCheckBox.prop("disabled", wasShowing);
+
         if(!wasShowing)
             updateTotalPrice();
+        saveAllToLocalStorage();
+    });
+
+    showTotalInNormalModeCheckBox.on("click", () =>
+    {
+        shouldShowTotalInNormalMode = !shouldShowTotalInNormalMode;
+
+        updateTotalPrice();
         saveAllToLocalStorage();
     });
 
@@ -365,7 +378,7 @@ $(document).ready(() =>
 
         // make relevant elements hidden/visible
         // TODO - maybe make this a class/two classes like how I did enabled/disabled buttons?  However, there aren't really enough elements to warrant that at the moment (though it could help express intent).
-        totalPriceArea.prop("hidden", wasEnabled);
+        totalSelectedPriceArea.prop("hidden", wasEnabled);
         priceCalculationModeSelectionInfo.prop("hidden", wasEnabled);
 
         if(wasEnabled)
@@ -462,10 +475,10 @@ $(document).ready(() =>
     $("#equationVisibilityToggleButton").on("click", () =>
     {
         // TODO - might want to use something like this for the price calculation toggle, since it can be tied to the total price div area
-        const wasHidden = totalPriceEquationHolder.is("[hidden]");
+        const wasHidden = totalSelectedPriceEquationHolder.is("[hidden]");
 
         equationVisibilityStateSpan.text(wasHidden ? "Hide" : "Show");
-        totalPriceEquationHolder.prop("hidden", !wasHidden);
+        totalSelectedPriceEquationHolder.prop("hidden", !wasHidden);
 
         const toggleButton = event.currentTarget;
         if(wasHidden)
@@ -854,7 +867,6 @@ function getImageUrl(itemNameTitleSnakeCase)
             //return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
             return pages[pageId].imageinfo[0].url.split("\/revision\/")[0]; // or split on "\/revision\/latest", but I'm worried that something might change at some point
         });
-
 }
 
 let previousSelection;
@@ -1242,6 +1254,7 @@ function calculateTotalSelectedPrice()
     // TODO -- I should instead filter this BEFORE sorting (doesn't change anything functionally, it's just more performant that way)
     // we go through it in quantity descending order to make the equation be in the same order as the items in the grid
     // TODO -- now that this function gets called from updateItemLayout() whenever showing price in screenshot is enabled, I should probably be caching itemsSortedDescending
+    // NOTE: this sorts by descending so that the price gets calculated in the same order as it is displayed (this is important for both the order of the generated price equation and for the order in which warning/error messages occur and "halt" the calculation)
     const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
     let message, isError = false;
     for(let item of itemsSortedDescending)
@@ -1278,12 +1291,38 @@ function calculateTotalSelectedPrice()
     const hasMessage = message !== undefined;
     if(hasMessage)
     {
-        totalPriceMessageHolder.text(message);
-        totalPriceMessageHolder.css("color", isError ? "red" : "purple");
+        totalSelectedPriceMessageHolder.text(message);
+        totalSelectedPriceMessageHolder.css("color", isError ? "red" : "purple");
     }
-    totalPriceMessageHolder.prop("hidden", !hasMessage);
+    totalSelectedPriceMessageHolder.prop("hidden", !hasMessage);
 
-    totalPriceEquationHolder.text(equations.join(" + "));
+    totalSelectedPriceEquationHolder.text(equations.join(" + "));
+
+    return total;
+}
+
+// calculates the total price of ALL items, selected or not (does not modify the price calculation area's message holder stuff)
+function calculateTotalPrice()
+{
+    let total = 0;
+    // TODO -- I should instead filter this BEFORE sorting (doesn't change anything functionally, it's just more performant that way)
+    // we go through it in quantity descending order to make the equation be in the same order as the items in the grid
+    // TODO -- now that this function gets called from updateItemLayout() whenever showing price in screenshot is enabled, I should probably be caching itemsSortedDescending
+    // Technically, this doesn't need to sort by descending, since unlike the function which calculates total for the SELECTED price, this one is doing it for all; if an error occurs, the outcome of the values will be NaN regardless of order (the only thing that will be different is what gets logged in the console in the event of an error)
+    const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
+    for(let item of itemsSortedDescending)
+    {
+        let [itemTotalPrice, equation, error, warning] = item.calculateTotalPrice();
+
+        // this is always done since it'll make sure that the total becomes NaN if there is an error
+        total += itemTotalPrice;
+
+        if(error)
+        {
+            console.log(error);
+            break;
+        }
+    }
 
     return total;
 }
@@ -1291,31 +1330,49 @@ function calculateTotalSelectedPrice()
 // TODO -- it might be better to check whether in price calculation mode here (and/or if price is shown in the screenshot) instead of everywhere before calling this function, though that might be slower in scenarios where I have the state (of whether being in price calculation mode or not) cached.
 function updateTotalPrice()
 {
-    const totalPrice = calculateTotalSelectedPrice();
-    const totalPriceFormatted = totalPrice.toLocaleString();
+    const totalSelectedPrice = calculateTotalSelectedPrice();
+    const totalSelectedPriceFormatted = totalSelectedPrice.toLocaleString();
 
     // hasn't loaded yet
     if(!priceCalculationItem)
         return;
 
-    const totalPriceInItems = +(totalPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
-    const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
+    const totalSelectedPriceInItems = +(totalSelectedPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
+    const totalSelectedPriceInItemsFormatted = totalSelectedPriceInItems.toLocaleString();
 
-    const selectedCount = getSelectedCount();
+    const selectedCount = getSelectedItemCount();
 
-    const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} items)`;
+    const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} items)`;
 
-    if(getIsInPriceCalculationMode())
-        totalPriceHolder.html(totalPriceHTML);
+    const isInPriceCalculationMode = getIsInPriceCalculationMode();
+
+    if(isInPriceCalculationMode)
+        totalSelectedPriceHolder.html(totalSelectedPriceHTML);
 
     if(getIsPriceShownInScreenshot())
-        screenshotPriceHolder.html(totalPriceHTML);
+    {
+        if(!isInPriceCalculationMode && shouldShowTotalInNormalMode)
+        {
+            const totalPrice = calculateTotalPrice();
+            const totalPriceFormatted = totalPrice.toLocaleString();
+
+            const totalPriceInItems = +(totalPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
+            const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
+
+            const itemCount = getTotalItemCount();
+
+            const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCount} items)`;
+            screenshotPriceHolder.html(totalPriceHTML);
+        }
+        else
+            screenshotPriceHolder.html(totalSelectedPriceHTML);
+    }
 }
 
 
 function getIsInPriceCalculationMode()
 {
-    return !totalPriceArea.is("[hidden]");
+    return !totalSelectedPriceArea.is("[hidden]");
 }
 
 function getIsPriceShownInScreenshot()
@@ -1489,7 +1546,7 @@ function rescaleScreenshotRegion()
     screenshotRegion[0].style.transform = `scale(${scaleFactor})`;
 }
 
-function getSelectedCount()
+function getSelectedItemCount()
 {
     let count = 0;
     for(let item of [...items.values()])
@@ -1497,6 +1554,15 @@ function getSelectedCount()
         if(item.isSelected)
             count += item.customQuantity ?? item.quantity;
     }
+
+    return count;
+}
+
+function getTotalItemCount()
+{
+    let count = 0;
+    for(let item of [...items.values()])
+        count += item.customQuantity ?? item.quantity;
 
     return count;
 }
@@ -1661,6 +1727,11 @@ function loadAllFromLocalStorage()
     const sShowPriceInScreenshot = (localStorage.getItem("showPriceInScreenshot") ?? "true") === "true"; // default to true; localStorage only uses strings, so need to make sure to compare to "true" not true
     showPriceInScreenshotCheckBox.prop("checked", sShowPriceInScreenshot);
     screenshotPriceHolder.prop("hidden", !sShowPriceInScreenshot);
+    showTotalInNormalModeCheckBox.prop("disabled", !sShowPriceInScreenshot);
+
+    const sShowTotalInNormalMode = (localStorage.getItem("showTotalInNormalMode") ?? (sShowPriceInScreenshot ? "true" : "false")) === "true"; // default to true so long as show price in screenshot is also enabled; localStorage only uses strings, so need to make sure to compare to "true" not true
+    shouldShowTotalInNormalMode = sShowTotalInNormalMode;
+    showTotalInNormalModeCheckBox.prop("checked", sShowTotalInNormalMode);
 }
 
 function saveAllToLocalStorage()
@@ -1679,6 +1750,7 @@ function saveAllToLocalStorage()
     // TODO -- finish up "Selections category and add it here; might want to combine thing right below this into this"
 
     localStorage.setItem("showPriceInScreenshot", showPriceInScreenshotCheckBox.prop("checked"));
+    localStorage.setItem("showTotalInNormalMode", shouldShowTotalInNormalMode);
 }
 
 function saveItemsToLocalStorage()
@@ -1689,6 +1761,8 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.11", `Features:
+- Added setting to show total price in normal mode for the generated image (as in, the price of all items, regardless of whether they are selected; this defaults to being enabled so long as you have the base "Show Selected Price" setting enabled)`],
     ["v2.10.1", `Bug Fixes:
 - Fixed some item urls (or only one?) no longer working (seemingly caused by a change in how the wiki api schema is for certain edge cases)`],
     ["v2.10", `Features:

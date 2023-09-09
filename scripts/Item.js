@@ -253,7 +253,6 @@ function getImageUrl(itemNameTitleSnakeCase)
             //return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
             return pages[pageId].imageinfo[0].url.split("\/revision\/")[0]; // or split on "\/revision\/latest", but I'm worried that something might change at some point
         });
-
 }
 
 let previousSelection;
@@ -641,6 +640,7 @@ function calculateTotalSelectedPrice()
     // TODO -- I should instead filter this BEFORE sorting (doesn't change anything functionally, it's just more performant that way)
     // we go through it in quantity descending order to make the equation be in the same order as the items in the grid
     // TODO -- now that this function gets called from updateItemLayout() whenever showing price in screenshot is enabled, I should probably be caching itemsSortedDescending
+    // NOTE: this sorts by descending so that the price gets calculated in the same order as it is displayed (this is important for both the order of the generated price equation and for the order in which warning/error messages occur and "halt" the calculation)
     const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
     let message, isError = false;
     for(let item of itemsSortedDescending)
@@ -677,12 +677,38 @@ function calculateTotalSelectedPrice()
     const hasMessage = message !== undefined;
     if(hasMessage)
     {
-        totalPriceMessageHolder.text(message);
-        totalPriceMessageHolder.css("color", isError ? "red" : "purple");
+        totalSelectedPriceMessageHolder.text(message);
+        totalSelectedPriceMessageHolder.css("color", isError ? "red" : "purple");
     }
-    totalPriceMessageHolder.prop("hidden", !hasMessage);
+    totalSelectedPriceMessageHolder.prop("hidden", !hasMessage);
 
-    totalPriceEquationHolder.text(equations.join(" + "));
+    totalSelectedPriceEquationHolder.text(equations.join(" + "));
+
+    return total;
+}
+
+// calculates the total price of ALL items, selected or not (does not modify the price calculation area's message holder stuff)
+function calculateTotalPrice()
+{
+    let total = 0;
+    // TODO -- I should instead filter this BEFORE sorting (doesn't change anything functionally, it's just more performant that way)
+    // we go through it in quantity descending order to make the equation be in the same order as the items in the grid
+    // TODO -- now that this function gets called from updateItemLayout() whenever showing price in screenshot is enabled, I should probably be caching itemsSortedDescending
+    // Technically, this doesn't need to sort by descending, since unlike the function which calculates total for the SELECTED price, this one is doing it for all; if an error occurs, the outcome of the values will be NaN regardless of order (the only thing that will be different is what gets logged in the console in the event of an error)
+    const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
+    for(let item of itemsSortedDescending)
+    {
+        let [itemTotalPrice, equation, error, warning] = item.calculateTotalPrice();
+
+        // this is always done since it'll make sure that the total becomes NaN if there is an error
+        total += itemTotalPrice;
+
+        if(error)
+        {
+            console.log(error);
+            break;
+        }
+    }
 
     return total;
 }
@@ -690,31 +716,49 @@ function calculateTotalSelectedPrice()
 // TODO -- it might be better to check whether in price calculation mode here (and/or if price is shown in the screenshot) instead of everywhere before calling this function, though that might be slower in scenarios where I have the state (of whether being in price calculation mode or not) cached.
 function updateTotalPrice()
 {
-    const totalPrice = calculateTotalSelectedPrice();
-    const totalPriceFormatted = totalPrice.toLocaleString();
+    const totalSelectedPrice = calculateTotalSelectedPrice();
+    const totalSelectedPriceFormatted = totalSelectedPrice.toLocaleString();
 
     // hasn't loaded yet
     if(!priceCalculationItem)
         return;
 
-    const totalPriceInItems = +(totalPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
-    const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
+    const totalSelectedPriceInItems = +(totalSelectedPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
+    const totalSelectedPriceInItemsFormatted = totalSelectedPriceInItems.toLocaleString();
 
-    const selectedCount = getSelectedCount();
+    const selectedCount = getSelectedItemCount();
 
-    const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} items)`;
+    const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} items)`;
 
-    if(getIsInPriceCalculationMode())
-        totalPriceHolder.html(totalPriceHTML);
+    const isInPriceCalculationMode = getIsInPriceCalculationMode();
+
+    if(isInPriceCalculationMode)
+        totalSelectedPriceHolder.html(totalSelectedPriceHTML);
 
     if(getIsPriceShownInScreenshot())
-        screenshotPriceHolder.html(totalPriceHTML);
+    {
+        if(!isInPriceCalculationMode && shouldShowTotalInNormalMode)
+        {
+            const totalPrice = calculateTotalPrice();
+            const totalPriceFormatted = totalPrice.toLocaleString();
+
+            const totalPriceInItems = +(totalPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
+            const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
+
+            const itemCount = getTotalItemCount();
+
+            const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCount} items)`;
+            screenshotPriceHolder.html(totalPriceHTML);
+        }
+        else
+            screenshotPriceHolder.html(totalSelectedPriceHTML);
+    }
 }
 
 
 function getIsInPriceCalculationMode()
 {
-    return !totalPriceArea.is("[hidden]");
+    return !totalSelectedPriceArea.is("[hidden]");
 }
 
 function getIsPriceShownInScreenshot()
@@ -888,7 +932,7 @@ function rescaleScreenshotRegion()
     screenshotRegion[0].style.transform = `scale(${scaleFactor})`;
 }
 
-function getSelectedCount()
+function getSelectedItemCount()
 {
     let count = 0;
     for(let item of [...items.values()])
@@ -896,6 +940,15 @@ function getSelectedCount()
         if(item.isSelected)
             count += item.customQuantity ?? item.quantity;
     }
+
+    return count;
+}
+
+function getTotalItemCount()
+{
+    let count = 0;
+    for(let item of [...items.values()])
+        count += item.customQuantity ?? item.quantity;
 
     return count;
 }

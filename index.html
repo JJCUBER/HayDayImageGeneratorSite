@@ -22,10 +22,10 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js" integrity="sha512-sdAWRZSPnL/EbXixTyBhffFggsxlPrxEMLKvseTBMfY3MGxYvXvm83S/WddNpx1tXPylK5warEPp7uu1yiNsgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=2.10.1">
+        <link rel="stylesheet" href="style.css?v=2.11">
 
 
-        <script src="script.js?v=2.10.1"></script>
+        <script src="script.js?v=2.11"></script>
     </head>
     <body>
         <h2>Options</h2>
@@ -88,11 +88,11 @@
 
         <div style="height: 15px;"></div>
         <hr>
-        <div id="totalPriceArea" hidden>
+        <div id="totalSelectedPriceArea" hidden>
             <h2>Total Selected Price</h2>
-            <p id="totalPriceHolder"></p>
-            <p id="totalPriceEquationHolder" hidden></p>
-            <p id="totalPriceMessageHolder" hidden></p>
+            <p id="totalSelectedPriceHolder"></p>
+            <p id="totalSelectedPriceEquationHolder" hidden></p>
+            <p id="totalSelectedPriceMessageHolder" hidden></p>
             <hr>
         </div>
         <small>You can click on any item's image, quantity, or price to autofill all their information and focus the corresponding text box!  (This includes the bottom text.)</small>
@@ -179,8 +179,17 @@
                     <hr>
 
                     <h2>Generated Image</h2>
-                    <input type="checkbox" id="showPriceInScreenshotCheckBox">
-                    <label for="showPriceInScreenshotCheckBox">Show Selected Price</label>
+                    <div style="text-align:left; display: inline-block;">
+                        <input type="checkbox" id="showPriceInScreenshotCheckBox">
+                        <label for="showPriceInScreenshotCheckBox">Show Selected Price</label>
+                        <br>
+                        <input type="checkbox" id="showTotalInNormalModeCheckBox">
+                        <!-- no clue how to improve the verbiage of this without making it too long (I want to make it clear that this will show the total price of everything instead of selected when outside of price calculation mode) -->
+                        <!-- TODO -- this should be disabled when the checkbox above isn't checked -->
+                        <!--<label for="tempCheckBox">Show Total Price<br>in Normal Mode</label>-->
+                        <label for="showTotalInNormalModeCheckBox">Show Total in Normal Mode</label>
+                        <!-- <label for="tempCheckBox">Show Total instead in Normal Mode</label> -->
+                    </div>
                 </div>
             </div>
         </div>

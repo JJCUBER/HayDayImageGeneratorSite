@@ -39,6 +39,11 @@ function loadAllFromLocalStorage()
     const sShowPriceInScreenshot = (localStorage.getItem("showPriceInScreenshot") ?? "true") === "true"; // default to true; localStorage only uses strings, so need to make sure to compare to "true" not true
     showPriceInScreenshotCheckBox.prop("checked", sShowPriceInScreenshot);
     screenshotPriceHolder.prop("hidden", !sShowPriceInScreenshot);
+    showTotalInNormalModeCheckBox.prop("disabled", !sShowPriceInScreenshot);
+
+    const sShowTotalInNormalMode = (localStorage.getItem("showTotalInNormalMode") ?? (sShowPriceInScreenshot ? "true" : "false")) === "true"; // default to true so long as show price in screenshot is also enabled; localStorage only uses strings, so need to make sure to compare to "true" not true
+    shouldShowTotalInNormalMode = sShowTotalInNormalMode;
+    showTotalInNormalModeCheckBox.prop("checked", sShowTotalInNormalMode);
 }
 
 function saveAllToLocalStorage()
@@ -57,6 +62,7 @@ function saveAllToLocalStorage()
     // TODO -- finish up "Selections category and add it here; might want to combine thing right below this into this"
 
     localStorage.setItem("showPriceInScreenshot", showPriceInScreenshotCheckBox.prop("checked"));
+    localStorage.setItem("showTotalInNormalMode", shouldShowTotalInNormalMode);
 }
 
 function saveItemsToLocalStorage()

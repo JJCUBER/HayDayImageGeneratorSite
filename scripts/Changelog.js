@@ -1,4 +1,6 @@
 const changelog = new Map([
+    ["v2.11", `Features:
+- Added setting to show total price in normal mode for the generated image (as in, the price of all items, regardless of whether they are selected; this defaults to being enabled so long as you have the base "Show Selected Price" setting enabled)`],
     ["v2.10.1", `Bug Fixes:
 - Fixed some item urls (or only one?) no longer working (seemingly caused by a change in how the wiki api schema is for certain edge cases)`],
     ["v2.10", `Features:

@@ -342,8 +342,8 @@ td.selected:hover
     outline: none; /* prevents black outline of focused input, along with when shift is pressed when a button is "focused" */
 }
 
-/* the second entry makes every element inside totalPriceArea fade in (it also makes images inside the p tag not fade in each time they are loaded, but it does fade in with the p tag itself the first time which is what I want; the :not:empty is to make sure the equation fades in whenever it is populated, since it can be "visible" while still empty, causing it to otherwise instantly appear when populated) */
-.overlay, #totalPriceArea :not(img, :empty), #priceCalculationModeSelectionInfo
+/* the second entry makes every element inside totalSelectedPriceArea fade in (it also makes images inside the p tag not fade in each time they are loaded, but it does fade in with the p tag itself the first time which is what I want; the :not:empty is to make sure the equation fades in whenever it is populated, since it can be "visible" while still empty, causing it to otherwise instantly appear when populated) */
+.overlay, #totalSelectedPriceArea :not(img, :empty), #priceCalculationModeSelectionInfo
 {
     animation: fadeIn 0.3s forwards;
 }
@@ -360,7 +360,7 @@ td.selected:hover
     }
 }
 
-#totalPriceMessageHolder
+#totalSelectedPriceMessageHolder
 {
     font-weight: bold;
 

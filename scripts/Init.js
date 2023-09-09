@@ -21,6 +21,7 @@ $(document).ready(() =>
     textListFormatInput = $("#textListFormatInput");
     priceCalculationItemInput = $("#priceCalculationItemInput");
     showPriceInScreenshotCheckBox = $("#showPriceInScreenshotCheckBox");
+    showTotalInNormalModeCheckBox = $("#showTotalInNormalModeCheckBox");
 
     priceCalculationModeStateSpan = $("#priceCalculationModeStateSpan");
 
@@ -30,10 +31,10 @@ $(document).ready(() =>
     equationVisibilityStateSpan = $("#equationVisibilityStateSpan");
     unselectedItemsVisibilityStateSpan = $("#unselectedItemsVisibilityStateSpan");
 
-    totalPriceArea = $("#totalPriceArea");
-    totalPriceHolder = $("#totalPriceHolder");
-    totalPriceMessageHolder = $("#totalPriceMessageHolder");
-    totalPriceEquationHolder = $("#totalPriceEquationHolder");
+    totalSelectedPriceArea = $("#totalSelectedPriceArea");
+    totalSelectedPriceHolder = $("#totalSelectedPriceHolder");
+    totalSelectedPriceMessageHolder = $("#totalSelectedPriceMessageHolder");
+    totalSelectedPriceEquationHolder = $("#totalSelectedPriceEquationHolder");
 
     priceCalculationModeSelectionInfo = $("#priceCalculationModeSelectionInfo");
 
@@ -253,13 +254,24 @@ $(document).ready(() =>
     priceCalculationItemInput.trigger("change");
 
 
+    // TODO -- should I be using change event instead of click event for checkboxes (along with any input element variants)?  Resources such as https://stackoverflow.com/questions/3442322/jquery-checkbox-event-handling make it sound like click doesn't work for certain things, but they do seem to (which is likely due to how old this so question is).
     showPriceInScreenshotCheckBox.on("click", () =>
     {
         let wasShowing = getIsPriceShownInScreenshot();
         screenshotPriceHolder.prop("hidden", wasShowing);
 
+        showTotalInNormalModeCheckBox.prop("disabled", wasShowing);
+
         if(!wasShowing)
             updateTotalPrice();
+        saveAllToLocalStorage();
+    });
+
+    showTotalInNormalModeCheckBox.on("click", () =>
+    {
+        shouldShowTotalInNormalMode = !shouldShowTotalInNormalMode;
+
+        updateTotalPrice();
         saveAllToLocalStorage();
     });
 
@@ -292,7 +304,7 @@ $(document).ready(() =>
 
         // make relevant elements hidden/visible
         // TODO - maybe make this a class/two classes like how I did enabled/disabled buttons?  However, there aren't really enough elements to warrant that at the moment (though it could help express intent).
-        totalPriceArea.prop("hidden", wasEnabled);
+        totalSelectedPriceArea.prop("hidden", wasEnabled);
         priceCalculationModeSelectionInfo.prop("hidden", wasEnabled);
 
         if(wasEnabled)
@@ -389,10 +401,10 @@ $(document).ready(() =>
     $("#equationVisibilityToggleButton").on("click", () =>
     {
         // TODO - might want to use something like this for the price calculation toggle, since it can be tied to the total price div area
-        const wasHidden = totalPriceEquationHolder.is("[hidden]");
+        const wasHidden = totalSelectedPriceEquationHolder.is("[hidden]");
 
         equationVisibilityStateSpan.text(wasHidden ? "Hide" : "Show");
-        totalPriceEquationHolder.prop("hidden", !wasHidden);
+        totalSelectedPriceEquationHolder.prop("hidden", !wasHidden);
 
         const toggleButton = event.currentTarget;
         if(wasHidden)
