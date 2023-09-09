@@ -86,11 +86,17 @@ class Item
     }
 
     // returns [totalPrice, equation, error, warning]
-    calculateTotalPrice()
+    calculateTotalPrice(shouldIgnoreCustomValues = false)
     {
         let quantity = this.customQuantity ?? this.quantity,
             priceOrMultiplier = this.customPriceOrMultiplier ?? this.priceOrMultiplier,
             maxPrice = this.maxPrice;
+
+        if(shouldIgnoreCustomValues)
+        {
+            quantity = this.quantity;
+            priceOrMultiplier = this.priceOrMultiplier;
+        }
 
         if(!maxPrice)
             return [NaN, "NaN", `${this.getHumanReadableName()} doesn't have a valid maximum price (${maxPrice}).`];
@@ -260,11 +266,15 @@ function updateItemLayout()
 {
     itemTable.empty();
 
+    // must do this up-front to ensure that the price gets properly update in the event that 1) all the items get cleared out, or 2) all the visible items get cleared out (if in price calc mode with hide unselected)
+    const shouldShowSelection = getIsInPriceCalculationMode();
+    if(shouldShowSelection || getIsPriceShownInScreenshot())
+        updateTotalPrice();
+
     if(!items.size)
         return;
 
 
-    const shouldShowSelection = getIsInPriceCalculationMode();
     previousSelection = undefined;
 
     let itemsUnsorted = [...items.values()];
@@ -429,9 +439,6 @@ function updateItemLayout()
 
         itemTable.append(tableRow);
     }
-
-    if(shouldShowSelection || getIsPriceShownInScreenshot())
-        updateTotalPrice();
 
     // I don't want to call this every time, since I feel like it slows down everything (I instead only call it when relevant things resize [items per row count, window size, bottom text])
     // rescaleScreenshotRegion();
@@ -698,7 +705,7 @@ function calculateTotalPrice()
     const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
     for(let item of itemsSortedDescending)
     {
-        let [itemTotalPrice, equation, error, warning] = item.calculateTotalPrice();
+        let [itemTotalPrice, equation, error, warning] = item.calculateTotalPrice(true); // ignore custom values
 
         // this is always done since it'll make sure that the total becomes NaN if there is an error
         total += itemTotalPrice;
@@ -728,7 +735,7 @@ function updateTotalPrice()
 
     const selectedCount = getSelectedItemCount();
 
-    const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} items)`;
+    const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCount} item${selectedCount === 1 ? "" : "s"})`;
 
     const isInPriceCalculationMode = getIsInPriceCalculationMode();
 
@@ -747,7 +754,7 @@ function updateTotalPrice()
 
             const itemCount = getTotalItemCount();
 
-            const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCount} items)`;
+            const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItems}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCount} item${itemCount === 1 ? "" : "s"})`;
             screenshotPriceHolder.html(totalPriceHTML);
         }
         else
@@ -948,7 +955,7 @@ function getTotalItemCount()
 {
     let count = 0;
     for(let item of [...items.values()])
-        count += item.customQuantity ?? item.quantity;
+        count += item.quantity; // ignore custom quantities
 
     return count;
 }

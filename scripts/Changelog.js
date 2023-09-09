@@ -1,4 +1,11 @@
 const changelog = new Map([
+    ["v2.11.1", `UI Improvements:
+- Made the selected items count use "item" instead of "items" when exactly 1 item is selected (ensured plurality is always correct)
+
+Bug Fixes:
+- Fixed Clear All button not clearing/resetting the calculated price
+- Fixed similar issues where the item list goes from a state of having items -> being empty not clearing/resetting the calculated price
+- Made it so that total price in normal mode setting would ignore custom prices/multipliers and custom quantities specified within price calculation mode`],
     ["v2.11", `Features:
 - Added setting to show total price in normal mode for the generated image (as in, the price of all items, regardless of whether they are selected; this defaults to being enabled so long as you have the base "Show Selected Price" setting enabled)`],
     ["v2.10.1", `Bug Fixes:
