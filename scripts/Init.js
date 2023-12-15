@@ -22,6 +22,13 @@ $(document).ready(() =>
     priceCalculationItemInput = $("#priceCalculationItemInput");
     showPriceInScreenshotCheckBox = $("#showPriceInScreenshotCheckBox");
     showTotalInNormalModeCheckBox = $("#showTotalInNormalModeCheckBox");
+    hidePriceOrMultiplierCheckBox = $("#hidePriceOrMultiplierCheckBox");
+    defaultQuantityInput = $("#defaultQuantityInput");
+    defaultPriceOrMultiplierInput = $("#defaultPriceOrMultiplierInput");
+    refocusNameOnSubmitCheckBox = $("#refocusNameOnSubmitCheckBox");
+    ignoreLocaleCheckBox = $("#ignoreLocaleCheckBox");
+    // reduceAnimationsCheckBox = $("#reduceAnimationsCheckBox");
+
 
     priceCalculationModeStateSpan = $("#priceCalculationModeStateSpan");
 
@@ -96,7 +103,13 @@ $(document).ready(() =>
     {
         // want to return early if there was no item name (otherwise, the item quantity input's value would stay at 0 because handleAddingItem() would return early without doing anything)
         if(!formatItemName(itemNameInput.val()).length)
+        {
+            // done to be consistent with Submit; clicking Submit reselects the name field even when it is empty (when this setting is enabled)
+            if(shouldRefocusNameOnSubmit)
+                itemNameInput.trigger("select");
+
             return;
+        }
 
         //items.delete();
         itemQuantityInput.val("0");
@@ -254,7 +267,7 @@ $(document).ready(() =>
     priceCalculationItemInput.trigger("change");
 
 
-    // TODO -- should I be using change event instead of click event for checkboxes (along with any input element variants)?  Resources such as https://stackoverflow.com/questions/3442322/jquery-checkbox-event-handling make it sound like click doesn't work for certain things, but they do seem to (which is likely due to how old this so question is).
+    // TODO -- should I be using change event instead of click event for checkboxes (along with any input element variants)?  Resources such as https://stackoverflow.com/questions/3442322/jquery-checkbox-event-handling make it sound like click doesn't work for certain things, but they do seem to (which is likely due to how old this so question is).  This resource seems to better explain; in my use case, they are pretty much identical, though there is a potential distinction: https://stackoverflow.com/questions/11205957/jquery-difference-between-change-and-click-event-of-checkbox
     showPriceInScreenshotCheckBox.on("click", () =>
     {
         let wasShowing = getIsPriceShownInScreenshot();
@@ -274,6 +287,46 @@ $(document).ready(() =>
         updateTotalPrice();
         saveAllToLocalStorage();
     });
+
+    hidePriceOrMultiplierCheckBox.on("click", () =>
+    {
+        shouldHidePriceOrMultiplier = !shouldHidePriceOrMultiplier;
+
+        updateItemLayout();
+        saveAllToLocalStorage();
+    });
+
+    defaultQuantityInput.on("change", (event) =>
+    {
+        // TODO -- should this instead be set within saveAllToLocalStorage()?  Probably not...
+        defaultQuantity = event.target.value;
+
+        saveAllToLocalStorage();
+    });
+    defaultPriceOrMultiplierInput.on("change", (event) =>
+    {
+        // TODO -- should this instead be set within saveAllToLocalStorage()?  Probably not...
+        defaultPriceOrMultiplier = event.target.value;
+
+        saveAllToLocalStorage();
+    });
+    refocusNameOnSubmitCheckBox.on("click", () =>
+    {
+        shouldRefocusNameOnSubmit = !shouldRefocusNameOnSubmit;
+
+        saveAllToLocalStorage();
+    });
+    ignoreLocaleCheckBox.on("click", () =>
+    {
+        shouldIgnoreLocale = !shouldIgnoreLocale;
+
+        updateTotalPrice();
+        saveAllToLocalStorage();
+    });
+    // reduceAnimationsCheckBox.on("click", () =>
+    // {
+    //     // TODO -- figure out how to disable animations and transitions via js; I don't see a good way currently
+    // });
 
     $("#copyAsTextListButton").on("click", copyAsTextListToClipboard);
 

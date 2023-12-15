@@ -1,4 +1,16 @@
 const changelog = new Map([
+    ["v2.12", `Features:
+- Added setting to hide price/multipliers
+- Added settings for default quantity and default price/multiplier
+- Added setting to refocus the Name field when clicking Submit (or Delete); this is mostly useful for people on mobile and/or if you prefer using those buttons over pressing enter
+- Added setting to ignore locale (when enabled, it will format the total/selected price in the bottom-left corner as 123,456.789 instead of the default for your locale/region)
+
+Bug Fixes:
+- Fixed Copy Failed popup/overlay not showing (with the generated image) on Firefox; it will still fail to copy automatically on Firefox (unless you change your settings as mentioned in Misc), but now you can see the generated image, right-click/long-press it, and copy it easily
+
+Misc:
+- If you want the copy to clipboard button to work fully automatically on Firefox, go to the site about:config then set dom.events.asyncClipboard.clipboardItem to true (copying to clipboard not working by default is not due to anything on my end; it is a default within Firefox as a "feature").  The Copy Failed popup/overlay now explains this as well.
+- Sorry for the long gap between updates.  I hope Hay Day has been going well for you all!  Happy Holidays!`],
     ["v2.11.2", `UI Changes:
 - Made use of Locale a bit more consistent`],
     ["v2.11.1", `UI Improvements:

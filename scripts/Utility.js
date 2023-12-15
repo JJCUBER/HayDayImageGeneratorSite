@@ -21,3 +21,11 @@ function isRunningIOS()
         (navigator.userAgent.includes("Mac") && "ontouchend" in document);
 }
 
+function getLocaleString(num)
+{
+    // since this is an internal function with an optional parameter, I am worried that this might cause weird behavior, as in toLocaleString(undefined) behaving differently from toLocaleString()
+    // return num.toLocaleString(shouldIgnoreLocale ? "en-US" : undefined);
+
+    return shouldIgnoreLocale ? num.toLocaleString("en-US") : num.toLocaleString();
+}
+

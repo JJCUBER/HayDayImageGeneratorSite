@@ -17,6 +17,11 @@ function handleAddingItem(e, usedSubmitButton = false)
     if(!usedSubmitButton && e.code !== "Enter")
         return;
 
+    // at this point, the user has attempted to submit (or delete), so the input should get reselected (if the setting is enabled; this mostly just matters for people who click the submit button instead of enter)
+    // note that this also occurs when Delete button gets clicked
+    if(shouldRefocusNameOnSubmit)
+        itemNameInput.trigger("select");
+
     const itemNameFormatted = formatItemName(itemNameInput.val());
     if(!itemNameFormatted.length)
         return;
@@ -58,8 +63,8 @@ function handleAddingItem(e, usedSubmitButton = false)
         });
 
     itemNameInput.val("");
-    itemQuantityInput.val(1);
-    itemPriceOrMultiplierInput.val("5x");
+    itemQuantityInput.val(defaultQuantity);
+    itemPriceOrMultiplierInput.val(defaultPriceOrMultiplier);
 }
 
 
@@ -388,6 +393,8 @@ function updateItemLayout()
             {
                 itemPriceOrMultiplierInput.trigger("select");
             });
+            if(shouldHidePriceOrMultiplier)
+                priceLabel.style.display = "none";
 
             let customQuantityLabel, customPriceLabel;
             if(shouldShowSelection)
@@ -497,7 +504,8 @@ function copyImageToClipboard()
     {
         // htmlToImage.toBlob(..., {canvasWidth: ..., canvasHeight: ..., width: ..., height: ...}) // there are options for canvas Width/Height, along with node's Width/Height, but they aren't really what I'm looking for (zooming out far on the page itself still modifies the scaling of everything)
         clipboardWrittenPromise = htmlToImage.toBlob(screenshotRegion[0])
-            .then(blob => new ClipboardItem({"image/png": screenshotBlob = blob})) // also stores the blob in case the error is caught later
+            .then(blob => screenshotBlob = blob) // stores the blob in case the error is caught later (had to separate this since firefox doesn't have a ClipboardItem at all; the screenShot = blob code would never get parsed and cause the failed copy overly to never show)
+            .then(blob => new ClipboardItem({"image/png": blob}))
             .then(clipboardItem => navigator.clipboard.write([clipboardItem]));
     }
 
@@ -724,17 +732,17 @@ function calculateTotalPrice()
 function updateTotalPrice()
 {
     const totalSelectedPrice = calculateTotalSelectedPrice();
-    const totalSelectedPriceFormatted = totalSelectedPrice.toLocaleString();
+    const totalSelectedPriceFormatted = getLocaleString(totalSelectedPrice);
 
     // hasn't loaded yet
     if(!priceCalculationItem)
         return;
 
     const totalSelectedPriceInItems = +(totalSelectedPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
-    const totalSelectedPriceInItemsFormatted = totalSelectedPriceInItems.toLocaleString();
+    const totalSelectedPriceInItemsFormatted = getLocaleString(totalSelectedPriceInItems);
 
     const selectedCount = getSelectedItemCount();
-    const selectedCountFormatted = selectedCount.toLocaleString();
+    const selectedCountFormatted = getLocaleString(selectedCount);
 
     const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItemsFormatted}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCountFormatted} item${selectedCount === 1 ? "" : "s"})`;
 
@@ -748,13 +756,13 @@ function updateTotalPrice()
         if(!isInPriceCalculationMode && shouldShowTotalInNormalMode)
         {
             const totalPrice = calculateTotalPrice();
-            const totalPriceFormatted = totalPrice.toLocaleString();
+            const totalPriceFormatted = getLocaleString(totalPrice);
 
             const totalPriceInItems = +(totalPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
-            const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
+            const totalPriceInItemsFormatted = getLocaleString(totalPriceInItems);
 
             const itemCount = getTotalItemCount();
-            const itemCountFormatted = itemCount.toLocaleString();
+            const itemCountFormatted = getLocaleString(itemCount);
 
             const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItemsFormatted}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCountFormatted} item${itemCount === 1 ? "" : "s"})`;
             screenshotPriceHolder.html(totalPriceHTML);

@@ -23,6 +23,14 @@ function isRunningIOS()
         (navigator.userAgent.includes("Mac") && "ontouchend" in document);
 }
 
+function getLocaleString(num)
+{
+    // since this is an internal function with an optional parameter, I am worried that this might cause weird behavior, as in toLocaleString(undefined) behaving differently from toLocaleString()
+    // return num.toLocaleString(shouldIgnoreLocale ? "en-US" : undefined);
+
+    return shouldIgnoreLocale ? num.toLocaleString("en-US") : num.toLocaleString();
+}
+
 
 /* -------- scripts/Globals.js -------- */
 let itemsPerRow = 8;
@@ -30,7 +38,7 @@ let textListSeparatorSelectedRadio = 0;
 
 let itemsPerRowSlider, itemsPerRowLabel, itemNameInput, itemQuantityInput, itemPriceOrMultiplierInput, itemTable;
 let bottomText, screenshotRegion, screenshotPriceHolder;
-let settingsOverlay, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput, showPriceInScreenshotCheckBox, showTotalInNormalModeCheckBox;
+let settingsOverlay, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput, showPriceInScreenshotCheckBox, showTotalInNormalModeCheckBox, hidePriceOrMultiplierCheckBox, defaultQuantityInput, defaultPriceOrMultiplierInput, refocusNameOnSubmitCheckBox, ignoreLocaleCheckBox/*, reduceAnimationsCheckBox*/;
 let priceCalculationModeStateSpan;
 let disableInPriceCalculationModeElems, disableOutsidePriceCalculationModeElems;
 let equationVisibilityStateSpan, unselectedItemsVisibilityStateSpan;
@@ -41,7 +49,10 @@ let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
 let changelogOverlay, failedCopyOverlay, contactOverlay;
 let copyImageLoadingWheel;
-let shouldShowTotalInNormalMode = false; // FIXME -- I'm starting to think more and more that this shouldn't be a variable, since the state is already completely coupled with the checkbox; adding this variable just prevents a get...() call that queries the checkbox with jquery to check if it's checked
+let shouldShowTotalInNormalMode; // FIXME -- I'm starting to think more and more that this shouldn't be a variable, since the state is already completely coupled with the checkbox; adding this variable just prevents a get...() call that queries the checkbox with jquery to check if it's checked
+let shouldHidePriceOrMultiplier;
+let defaultQuantity, defaultPriceOrMultiplier;
+let shouldRefocusNameOnSubmit, shouldIgnoreLocale;
 
 let fuzzyMatchesHolder;
 
@@ -96,6 +107,13 @@ $(document).ready(() =>
     priceCalculationItemInput = $("#priceCalculationItemInput");
     showPriceInScreenshotCheckBox = $("#showPriceInScreenshotCheckBox");
     showTotalInNormalModeCheckBox = $("#showTotalInNormalModeCheckBox");
+    hidePriceOrMultiplierCheckBox = $("#hidePriceOrMultiplierCheckBox");
+    defaultQuantityInput = $("#defaultQuantityInput");
+    defaultPriceOrMultiplierInput = $("#defaultPriceOrMultiplierInput");
+    refocusNameOnSubmitCheckBox = $("#refocusNameOnSubmitCheckBox");
+    ignoreLocaleCheckBox = $("#ignoreLocaleCheckBox");
+    // reduceAnimationsCheckBox = $("#reduceAnimationsCheckBox");
+
 
     priceCalculationModeStateSpan = $("#priceCalculationModeStateSpan");
 
@@ -170,7 +188,13 @@ $(document).ready(() =>
     {
         // want to return early if there was no item name (otherwise, the item quantity input's value would stay at 0 because handleAddingItem() would return early without doing anything)
         if(!formatItemName(itemNameInput.val()).length)
+        {
+            // done to be consistent with Submit; clicking Submit reselects the name field even when it is empty (when this setting is enabled)
+            if(shouldRefocusNameOnSubmit)
+                itemNameInput.trigger("select");
+
             return;
+        }
 
         //items.delete();
         itemQuantityInput.val("0");
@@ -328,7 +352,7 @@ $(document).ready(() =>
     priceCalculationItemInput.trigger("change");
 
 
-    // TODO -- should I be using change event instead of click event for checkboxes (along with any input element variants)?  Resources such as https://stackoverflow.com/questions/3442322/jquery-checkbox-event-handling make it sound like click doesn't work for certain things, but they do seem to (which is likely due to how old this so question is).
+    // TODO -- should I be using change event instead of click event for checkboxes (along with any input element variants)?  Resources such as https://stackoverflow.com/questions/3442322/jquery-checkbox-event-handling make it sound like click doesn't work for certain things, but they do seem to (which is likely due to how old this so question is).  This resource seems to better explain; in my use case, they are pretty much identical, though there is a potential distinction: https://stackoverflow.com/questions/11205957/jquery-difference-between-change-and-click-event-of-checkbox
     showPriceInScreenshotCheckBox.on("click", () =>
     {
         let wasShowing = getIsPriceShownInScreenshot();
@@ -348,6 +372,46 @@ $(document).ready(() =>
         updateTotalPrice();
         saveAllToLocalStorage();
     });
+
+    hidePriceOrMultiplierCheckBox.on("click", () =>
+    {
+        shouldHidePriceOrMultiplier = !shouldHidePriceOrMultiplier;
+
+        updateItemLayout();
+        saveAllToLocalStorage();
+    });
+
+    defaultQuantityInput.on("change", (event) =>
+    {
+        // TODO -- should this instead be set within saveAllToLocalStorage()?  Probably not...
+        defaultQuantity = event.target.value;
+
+        saveAllToLocalStorage();
+    });
+    defaultPriceOrMultiplierInput.on("change", (event) =>
+    {
+        // TODO -- should this instead be set within saveAllToLocalStorage()?  Probably not...
+        defaultPriceOrMultiplier = event.target.value;
+
+        saveAllToLocalStorage();
+    });
+    refocusNameOnSubmitCheckBox.on("click", () =>
+    {
+        shouldRefocusNameOnSubmit = !shouldRefocusNameOnSubmit;
+
+        saveAllToLocalStorage();
+    });
+    ignoreLocaleCheckBox.on("click", () =>
+    {
+        shouldIgnoreLocale = !shouldIgnoreLocale;
+
+        updateTotalPrice();
+        saveAllToLocalStorage();
+    });
+    // reduceAnimationsCheckBox.on("click", () =>
+    // {
+    //     // TODO -- figure out how to disable animations and transitions via js; I don't see a good way currently
+    // });
 
     $("#copyAsTextListButton").on("click", copyAsTextListToClipboard);
 
@@ -631,6 +695,11 @@ function handleAddingItem(e, usedSubmitButton = false)
     if(!usedSubmitButton && e.code !== "Enter")
         return;
 
+    // at this point, the user has attempted to submit (or delete), so the input should get reselected (if the setting is enabled; this mostly just matters for people who click the submit button instead of enter)
+    // note that this also occurs when Delete button gets clicked
+    if(shouldRefocusNameOnSubmit)
+        itemNameInput.trigger("select");
+
     const itemNameFormatted = formatItemName(itemNameInput.val());
     if(!itemNameFormatted.length)
         return;
@@ -672,8 +741,8 @@ function handleAddingItem(e, usedSubmitButton = false)
         });
 
     itemNameInput.val("");
-    itemQuantityInput.val(1);
-    itemPriceOrMultiplierInput.val("5x");
+    itemQuantityInput.val(defaultQuantity);
+    itemPriceOrMultiplierInput.val(defaultPriceOrMultiplier);
 }
 
 
@@ -1002,6 +1071,8 @@ function updateItemLayout()
             {
                 itemPriceOrMultiplierInput.trigger("select");
             });
+            if(shouldHidePriceOrMultiplier)
+                priceLabel.style.display = "none";
 
             let customQuantityLabel, customPriceLabel;
             if(shouldShowSelection)
@@ -1111,7 +1182,8 @@ function copyImageToClipboard()
     {
         // htmlToImage.toBlob(..., {canvasWidth: ..., canvasHeight: ..., width: ..., height: ...}) // there are options for canvas Width/Height, along with node's Width/Height, but they aren't really what I'm looking for (zooming out far on the page itself still modifies the scaling of everything)
         clipboardWrittenPromise = htmlToImage.toBlob(screenshotRegion[0])
-            .then(blob => new ClipboardItem({"image/png": screenshotBlob = blob})) // also stores the blob in case the error is caught later
+            .then(blob => screenshotBlob = blob) // stores the blob in case the error is caught later (had to separate this since firefox doesn't have a ClipboardItem at all; the screenShot = blob code would never get parsed and cause the failed copy overly to never show)
+            .then(blob => new ClipboardItem({"image/png": blob}))
             .then(clipboardItem => navigator.clipboard.write([clipboardItem]));
     }
 
@@ -1338,17 +1410,17 @@ function calculateTotalPrice()
 function updateTotalPrice()
 {
     const totalSelectedPrice = calculateTotalSelectedPrice();
-    const totalSelectedPriceFormatted = totalSelectedPrice.toLocaleString();
+    const totalSelectedPriceFormatted = getLocaleString(totalSelectedPrice);
 
     // hasn't loaded yet
     if(!priceCalculationItem)
         return;
 
     const totalSelectedPriceInItems = +(totalSelectedPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
-    const totalSelectedPriceInItemsFormatted = totalSelectedPriceInItems.toLocaleString();
+    const totalSelectedPriceInItemsFormatted = getLocaleString(totalSelectedPriceInItems);
 
     const selectedCount = getSelectedItemCount();
-    const selectedCountFormatted = selectedCount.toLocaleString();
+    const selectedCountFormatted = getLocaleString(selectedCount);
 
     const totalSelectedPriceHTML = `${totalSelectedPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalSelectedPriceInItemsFormatted}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${selectedCountFormatted} item${selectedCount === 1 ? "" : "s"})`;
 
@@ -1362,13 +1434,13 @@ function updateTotalPrice()
         if(!isInPriceCalculationMode && shouldShowTotalInNormalMode)
         {
             const totalPrice = calculateTotalPrice();
-            const totalPriceFormatted = totalPrice.toLocaleString();
+            const totalPriceFormatted = getLocaleString(totalPrice);
 
             const totalPriceInItems = +(totalPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
-            const totalPriceInItemsFormatted = totalPriceInItems.toLocaleString();
+            const totalPriceInItemsFormatted = getLocaleString(totalPriceInItems);
 
             const itemCount = getTotalItemCount();
-            const itemCountFormatted = itemCount.toLocaleString();
+            const itemCountFormatted = getLocaleString(itemCount);
 
             const totalPriceHTML = `${totalPriceFormatted}<img src="${coinImageUrl}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>${totalPriceInItemsFormatted}<img src="${priceCalculationItem.url}" style="width: 14px; height: 14px;"><span style="display: inline-block; width: 10px;"></span>(${itemCountFormatted} item${itemCount === 1 ? "" : "s"})`;
             screenshotPriceHolder.html(totalPriceHTML);
@@ -1741,6 +1813,28 @@ function loadAllFromLocalStorage()
     const sShowTotalInNormalMode = (localStorage.getItem("showTotalInNormalMode") ?? (sShowPriceInScreenshot ? "true" : "false")) === "true"; // default to true so long as show price in screenshot is also enabled; localStorage only uses strings, so need to make sure to compare to "true" not true
     shouldShowTotalInNormalMode = sShowTotalInNormalMode;
     showTotalInNormalModeCheckBox.prop("checked", sShowTotalInNormalMode);
+
+    const sHidePriceOrMultiplier = (localStorage.getItem("hidePriceOrMultiplier") ?? "false") === "true"; // default to false
+    shouldHidePriceOrMultiplier = sHidePriceOrMultiplier;
+    hidePriceOrMultiplierCheckBox.prop("checked", sHidePriceOrMultiplier);
+
+    const sDefaultQuantity = localStorage.getItem("defaultQuantity") ?? "1"; // default to 1; not parsing as int since I want to allow equations
+    defaultQuantity = sDefaultQuantity;
+    defaultQuantityInput.val(sDefaultQuantity);
+    itemQuantityInput.val(sDefaultQuantity);
+
+    const sDefaultPriceOrMultiplier = localStorage.getItem("defaultPriceOrMultiplier") ?? "5x"; // default to 5x
+    defaultPriceOrMultiplier = sDefaultPriceOrMultiplier;
+    defaultPriceOrMultiplierInput.val(sDefaultPriceOrMultiplier);
+    itemPriceOrMultiplierInput.val(sDefaultPriceOrMultiplier);
+
+    const sRefocusNameOnSubmit = (localStorage.getItem("refocusNameOnSubmit") ?? "true") === "true"; // default to true // TODO -- is this a good idea (default: true)?
+    shouldRefocusNameOnSubmit = sRefocusNameOnSubmit;
+    refocusNameOnSubmitCheckBox.prop("checked", sRefocusNameOnSubmit);
+
+    const sIgnoreLocale = (localStorage.getItem("ignoreLocale") ?? "false") === "true"; // default to false
+    shouldIgnoreLocale = sIgnoreLocale;
+    ignoreLocaleCheckBox.prop("checked", sIgnoreLocale);
 }
 
 function saveAllToLocalStorage()
@@ -1760,6 +1854,14 @@ function saveAllToLocalStorage()
 
     localStorage.setItem("showPriceInScreenshot", showPriceInScreenshotCheckBox.prop("checked"));
     localStorage.setItem("showTotalInNormalMode", shouldShowTotalInNormalMode);
+
+    localStorage.setItem("hidePriceOrMultiplier", shouldHidePriceOrMultiplier);
+
+    localStorage.setItem("defaultQuantity", defaultQuantity);
+    localStorage.setItem("defaultPriceOrMultiplier", defaultPriceOrMultiplier);
+
+    localStorage.setItem("refocusNameOnSubmit", shouldRefocusNameOnSubmit);
+    localStorage.setItem("ignoreLocale", shouldIgnoreLocale);
 }
 
 function saveItemsToLocalStorage()
@@ -1770,6 +1872,18 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.12", `Features:
+- Added setting to hide price/multipliers
+- Added settings for default quantity and default price/multiplier
+- Added setting to refocus the Name field when clicking Submit (or Delete); this is mostly useful for people on mobile and/or if you prefer using those buttons over pressing enter
+- Added setting to ignore locale (when enabled, it will format the total/selected price in the bottom-left corner as 123,456.789 instead of the default for your locale/region)
+
+Bug Fixes:
+- Fixed Copy Failed popup/overlay not showing (with the generated image) on Firefox; it will still fail to copy automatically on Firefox (unless you change your settings as mentioned in Misc), but now you can see the generated image, right-click/long-press it, and copy it easily
+
+Misc:
+- If you want the copy to clipboard button to work fully automatically on Firefox, go to the site about:config then set dom.events.asyncClipboard.clipboardItem to true (copying to clipboard not working by default is not due to anything on my end; it is a default within Firefox as a "feature").  The Copy Failed popup/overlay now explains this as well.
+- Sorry for the long gap between updates.  I hope Hay Day has been going well for you all!  Happy Holidays!`],
     ["v2.11.2", `UI Changes:
 - Made use of Locale a bit more consistent`],
     ["v2.11.1", `UI Improvements:

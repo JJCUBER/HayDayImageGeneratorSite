@@ -44,6 +44,28 @@ function loadAllFromLocalStorage()
     const sShowTotalInNormalMode = (localStorage.getItem("showTotalInNormalMode") ?? (sShowPriceInScreenshot ? "true" : "false")) === "true"; // default to true so long as show price in screenshot is also enabled; localStorage only uses strings, so need to make sure to compare to "true" not true
     shouldShowTotalInNormalMode = sShowTotalInNormalMode;
     showTotalInNormalModeCheckBox.prop("checked", sShowTotalInNormalMode);
+
+    const sHidePriceOrMultiplier = (localStorage.getItem("hidePriceOrMultiplier") ?? "false") === "true"; // default to false
+    shouldHidePriceOrMultiplier = sHidePriceOrMultiplier;
+    hidePriceOrMultiplierCheckBox.prop("checked", sHidePriceOrMultiplier);
+
+    const sDefaultQuantity = localStorage.getItem("defaultQuantity") ?? "1"; // default to 1; not parsing as int since I want to allow equations
+    defaultQuantity = sDefaultQuantity;
+    defaultQuantityInput.val(sDefaultQuantity);
+    itemQuantityInput.val(sDefaultQuantity);
+
+    const sDefaultPriceOrMultiplier = localStorage.getItem("defaultPriceOrMultiplier") ?? "5x"; // default to 5x
+    defaultPriceOrMultiplier = sDefaultPriceOrMultiplier;
+    defaultPriceOrMultiplierInput.val(sDefaultPriceOrMultiplier);
+    itemPriceOrMultiplierInput.val(sDefaultPriceOrMultiplier);
+
+    const sRefocusNameOnSubmit = (localStorage.getItem("refocusNameOnSubmit") ?? "true") === "true"; // default to true // TODO -- is this a good idea (default: true)?
+    shouldRefocusNameOnSubmit = sRefocusNameOnSubmit;
+    refocusNameOnSubmitCheckBox.prop("checked", sRefocusNameOnSubmit);
+
+    const sIgnoreLocale = (localStorage.getItem("ignoreLocale") ?? "false") === "true"; // default to false
+    shouldIgnoreLocale = sIgnoreLocale;
+    ignoreLocaleCheckBox.prop("checked", sIgnoreLocale);
 }
 
 function saveAllToLocalStorage()
@@ -63,6 +85,14 @@ function saveAllToLocalStorage()
 
     localStorage.setItem("showPriceInScreenshot", showPriceInScreenshotCheckBox.prop("checked"));
     localStorage.setItem("showTotalInNormalMode", shouldShowTotalInNormalMode);
+
+    localStorage.setItem("hidePriceOrMultiplier", shouldHidePriceOrMultiplier);
+
+    localStorage.setItem("defaultQuantity", defaultQuantity);
+    localStorage.setItem("defaultPriceOrMultiplier", defaultPriceOrMultiplier);
+
+    localStorage.setItem("refocusNameOnSubmit", shouldRefocusNameOnSubmit);
+    localStorage.setItem("ignoreLocale", shouldIgnoreLocale);
 }
 
 function saveItemsToLocalStorage()

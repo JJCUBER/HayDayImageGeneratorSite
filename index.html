@@ -22,10 +22,10 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js" integrity="sha512-sdAWRZSPnL/EbXixTyBhffFggsxlPrxEMLKvseTBMfY3MGxYvXvm83S/WddNpx1tXPylK5warEPp7uu1yiNsgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=2.11.2">
+        <link rel="stylesheet" href="style.css?v=2.12">
 
 
-        <script src="script.js?v=2.11.2"></script>
+        <script src="script.js?v=2.12"></script>
     </head>
     <body>
         <h2>Options</h2>
@@ -58,10 +58,10 @@
         </div>
 
         <label for="itemQuantityInput">Quantity</label>
-        <input type="text" id="itemQuantityInput" style="width: 3em;" value=1>
+        <input type="text" id="itemQuantityInput" style="width: 3em;">
 
         <label for="itemPriceOrMultiplierInput">Price/Multiplier</label>
-        <input type="text" id="itemPriceOrMultiplierInput" style="width: 3em;" value="5x">
+        <input type="text" id="itemPriceOrMultiplierInput" style="width: 3em;">
 
         <button id="itemSubmitButton" style="margin-left: 10px;">Submit</button>
         <button id="itemDeleteButton" class="disableInPriceCalculationMode">Delete</button>
@@ -179,7 +179,7 @@
                     <hr>
 
                     <h2>Generated Image</h2>
-                    <div style="text-align:left; display: inline-block;">
+                    <div style="text-align: left; display: inline-block;">
                         <input type="checkbox" id="showPriceInScreenshotCheckBox">
                         <label for="showPriceInScreenshotCheckBox">Show Selected Price</label>
                         <br>
@@ -189,6 +189,36 @@
                         <!--<label for="tempCheckBox">Show Total Price<br>in Normal Mode</label>-->
                         <label for="showTotalInNormalModeCheckBox">Show Total in Normal Mode</label>
                         <!-- <label for="tempCheckBox">Show Total instead in Normal Mode</label> -->
+                        <br>
+                        <br>
+                        <input type="checkbox" id="hidePriceOrMultiplierCheckBox">
+                        <label for="hidePriceOrMultiplierCheckBox">Hide Price/Multiplier</label>
+                    </div>
+
+                    <hr>
+
+                    <h2>Defaults</h2>
+                    <div style="text-align: right; display: inline-block;">
+                        <label for="defaultQuantityInput">Quantity</label>
+                        <input type="text" id="defaultQuantityInput" style="width: 8em;">
+                        <br>
+                        <label for="defaultPriceOrMultiplierInput">Price/Multiplier</label>
+                        <input type="text" id="defaultPriceOrMultiplierInput" style="width: 8em;">
+                    </div>
+
+                    <hr>
+
+                    <h2>Misc.</h2>
+                    <div style="text-align: left; display: inline-block;">
+                        <input type="checkbox" id="refocusNameOnSubmitCheckBox">
+                        <label for="refocusNameOnSubmitCheckBox">Refocus Name on Submit</label>
+                        <br>
+                        <input type="checkbox" id="ignoreLocaleCheckBox">
+                        <label for="ignoreLocaleCheckBox">Ignore Locale</label>
+                        <!-- TODO -- figure out how to disable animations and transitions via js; I don't see a good way currently -->
+                        <!-- <br> -->
+                        <!-- <input type="checkbox" id="reduceAnimationsCheckBox" style="display: none;"> -->
+                        <!-- <label for="reduceAnimationsCheckBox">Reduce Animations</label> -->
                     </div>
                 </div>
             </div>
@@ -213,10 +243,20 @@
                     <p>
                         It looks like there was an issue with copying the image to the clipboard.
                         <br>
-                        This is usually due to:
-                        <br>
-                        1) clicking out of the site while the image is being copied, or 2) using a mobile device.
-                        <br>
+                        This is usually caused by one of the reasons below.
+                        <ol style="text-align: left; display: inline-block; margin: 0px;">
+                            <li>clicking out of the site while the image is being copied</li>
+                            <br>
+                            <li>using certain mobile devices</li>
+                            <br>
+                            <li>
+                                using firefox and not enabling (in <b>about:config</b>)
+                                <br>
+                                <b>dom.events.asyncClipboard.clipboardItem</b>.
+                            </li>
+                        </ol>
+                    </p>
+                    <p>
                         Below is the image that was generated (right click/long-press the image to copy/save it)
                     </p>
 
