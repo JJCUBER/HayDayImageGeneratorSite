@@ -621,7 +621,6 @@ function getMaxPrice(itemNameTitleSnakeCase)
             return NaN;
         });
 }
-}
 
 // Some hay day wiki url's have special characters and/or differ from the normal in-game names of items; the _ isn't really needed since the api used for getting the site "normalizes" the input
 // I was contemplating using the api for query with search, but I don't want to risk getting the wrong page/item price for a given item
