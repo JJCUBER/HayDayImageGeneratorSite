@@ -1255,9 +1255,39 @@ function getMaxPrice(itemNameTitleSnakeCase)
         .then(json => json.parse.text["*"])
         .then(html =>
         {
-            // const priceRange = $(html).find("aside.portable-infobox span[title='Coin(s)']").first().parent().text();
-            const priceRange = $(html).find("aside.portable-infobox div[data-source='price']").children().text();
-            const maxPrice = parseInt(priceRange.split(" to ")[1]);
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, 'text/html');
+            const itemElement = htmlDoc.querySelector('ul li');
+            let maxPrice;
+                if (itemElement) {
+                    /*
+                    this code scrapes the price for 10 items (aka actual max price) and then divides by 10 to get the "real" price for 1 item
+                     */
+                    const extractedHTMLString = itemElement.innerHTML;
+                    const pattern = /for a maximum price of ((\d{1,3}(,\d{3})*(\.\d+)?)\b)/;
+                    const matches = extractedHTMLString.match(pattern);
+                    if (matches && matches.length > 1)
+                    {
+                        maxPrice = parseInt(matches[1].replace(",", "")) / 10;
+                    }
+                    else
+                    {
+                        console.log("No price found.");
+                    }
+                    if(!maxPrice)
+                    {
+                        console.log("Price not found.");
+                        const priceRange = $(html).find("aside.portable-infobox div[data-source='price']").children().text();
+                        maxPrice = parseInt(priceRange.split(" to ")[1]); // old way of doing it
+                    }
+
+                }
+                else
+                {
+                    console.log("Element not found. Defaulting back to the old way.");
+                    const priceRange = $(html).find("aside.portable-infobox div[data-source='price']").children().text();
+                    maxPrice = parseInt(priceRange.split(" to ")[1]); // old way of doing it
+                }
             console.log(itemNameTitleSnakeCase, "max price:", maxPrice);
             return maxPrice;
         }).catch(e =>
@@ -1267,6 +1297,7 @@ function getMaxPrice(itemNameTitleSnakeCase)
 
             return NaN;
         });
+}
 }
 
 // Some hay day wiki url's have special characters and/or differ from the normal in-game names of items; the _ isn't really needed since the api used for getting the site "normalizes" the input
