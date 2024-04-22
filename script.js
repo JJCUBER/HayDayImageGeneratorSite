@@ -1259,7 +1259,8 @@ function getMaxPrice(itemNameTitleSnakeCase)
             const htmlDoc = parser.parseFromString(html, 'text/html');
             const itemElement = htmlDoc.querySelector('ul li');
             let maxPrice;
-                if (itemElement) {
+                if (itemElement)
+                {
                     /*
                     this code scrapes the price for 10 items (aka actual max price) and then divides by 10 to get the "real" price for 1 item
                      */
@@ -1297,7 +1298,6 @@ function getMaxPrice(itemNameTitleSnakeCase)
 
             return NaN;
         });
-}
 }
 
 // Some hay day wiki url's have special characters and/or differ from the normal in-game names of items; the _ isn't really needed since the api used for getting the site "normalizes" the input
