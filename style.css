@@ -20,8 +20,6 @@ button
     transition: color 0.15s, background-color 0.15s, border-color 0.15s;
 
     /* This combined with the change to divs separating groups of buttons maintains the 10px gap, while also having a slightly less 8px gap between wrapped buttons (buttons that wrap to the next line); before, there would be no gap between these vertically, making it look bad */
-    margin-top: 4px;
-    margin-bottom: 4px;
 }
 
 button:disabled
@@ -45,12 +43,6 @@ button:active
 button:hover:enabled
 {
     cursor: pointer;
-}
-
-/* puts margin between consecutive buttons: https://developer.mozilla.org/en-US/docs/Web/CSS/Adjacent_sibling_combinator */
-button + button
-{
-    margin-left: 10px;
 }
 
 button, input, textarea
@@ -117,7 +109,7 @@ td.selected:hover
 {
     text-align: center;
 
-    font-size: 50px;
+    font-size: clamp(1em, 10vw, 50px);
     font-weight: bold;
 
     margin-top: 10px;
@@ -258,10 +250,10 @@ td.selected:hover
 
 #screenshotRegion
 {
-    background-color: inherit; /* needed for the html-to-image library to have the right background (it seems to have CORS issues in reading my styl.css file) */
-    display: inline-block; /* makes the screenshotRegion wrap tightly around its children */
+    width: 95%;
+    max-width: 500px;
 
-    transform-origin: top left;
+
 }
 
 
@@ -555,3 +547,26 @@ td.selected:hover
     text-align: right;
 }
 
+.itemContainer {
+    display: flex;
+    gap: 4px;
+    flex-direction: column;
+}
+
+.itemInputContainer, .utilityButtonContainer, .priceCalculationInputContainer, .extraButtonsContainer {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+@media only screen and (max-width: 600px)
+{
+    .itemInputContainer, .priceCalculationInputContainer, .extraButtonsContainer
+    {
+        flex-direction: column;
+    }
+
+    button {
+        height: 30px;
+    }
+}

@@ -62,8 +62,6 @@ $(document).ready(() =>
         itemsPerRow = parseInt(event.target.value); // must convert to integer/number (since I do + calculations with it and don't want it to concat like a string)
         itemsPerRowLabel.text(itemsPerRow);
         updateItemLayout();
-
-        rescaleScreenshotRegion();
     });
 
 
@@ -188,9 +186,6 @@ $(document).ready(() =>
         bottomText[0].innerText = event.target.value;
 
         saveAllToLocalStorage();
-
-        // I only do this on change and not on input because I fear that it would cause too much lag/input delay from processing this
-        rescaleScreenshotRegion();
     });
     bottomText.on("click", () =>
     {
@@ -554,10 +549,5 @@ $(document).ready(() =>
     // TODO -- maybe make this some class and/or css media query-related thing?
     if(isRunningIOS())
         $("input, textarea").css("font-size", "16px");
-
-
-    // rescale screenshot region whenever window/page is resized (also invokes it for the first time immediately to ensure it starts scaled properly)
-    $(window).on("resize", rescaleScreenshotRegion);
-    rescaleScreenshotRegion();
 });
 
