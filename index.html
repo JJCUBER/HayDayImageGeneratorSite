@@ -54,7 +54,7 @@
         <div style="display: inline-block; position: relative;">
             <!-- using em to be relative to the font size, since the font size is increased on iOS (to 16px) -->
             <input type="text" id="itemNameInput" style="width: 8em;" autocomplete="off">
-            <div id="fuzzyMatchesHolder"></div>
+            <div id="fuzzyMatchesHolderItemSearch"></div>
         </div>
 
         <label for="itemQuantityInput">Quantity</label>
@@ -157,7 +157,11 @@
                     <hr>
 
                     <h2>Item for Price Calculation</h2>
-                    <input type="text" id="priceCalculationItemInput" style="width: 8em;">
+                    <div style="display: inline-block; position: relative;">
+                        <!-- using em to be relative to the font size, since the font size is increased on iOS (to 16px) -->
+                        <input type="text" id="priceCalculationItemInput" style="width: 8em;" autocomplete="off">
+                        <div id="fuzzyMatchesHolderPriceCalc"></div>
+                    </div>
 
                     <!-- TODO -- finish implementing
                     <hr>

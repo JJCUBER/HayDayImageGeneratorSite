@@ -1,14 +1,13 @@
 
 /* -------- scripts/Utility.js -------- */
-function convertToTitleSnakeCase(phrase)
-{
-    if(!phrase.length)
+function convertToTitleSnakeCase(phrase) {
+    if (!phrase.length)
         return phrase;
 
     phrase = phrase.replaceAll("_", " ");
     let words = phrase.split(" ");
     let titleCaseWords = [];
-    for(let word of words)
+    for (let word of words)
         titleCaseWords.push(word[0].toUpperCase() + word.slice(1).toLowerCase());
 
     return titleCaseWords.join("_");
@@ -16,15 +15,13 @@ function convertToTitleSnakeCase(phrase)
 
 // gotten from https://stackoverflow.com/questions/9038625/detect-if-device-is-ios
 const iOSPlatformList = new Set(["iPad Simulator", "iPhone Simulator", "iPod Simulator", "iPad", "iPhone", "iPod"]);
-function isRunningIOS()
-{
+function isRunningIOS() {
     return iOSPlatformList.has(navigator.platform) ||
         // iPad on iOS 13 detection
         (navigator.userAgent.includes("Mac") && "ontouchend" in document);
 }
 
-function getLocaleString(num)
-{
+function getLocaleString(num) {
     // since this is an internal function with an optional parameter, I am worried that this might cause weird behavior, as in toLocaleString(undefined) behaving differently from toLocaleString()
     // return num.toLocaleString(shouldIgnoreLocale ? "en-US" : undefined);
 
@@ -54,7 +51,8 @@ let shouldHidePriceOrMultiplier;
 let defaultQuantity, defaultPriceOrMultiplier;
 let shouldRefocusNameOnSubmit, shouldIgnoreLocale;
 
-let fuzzyMatchesHolder;
+let fuzzyMatchesHolderItemSearch;
+let fuzzyMatchesHolderPriceCalc
 
 
 let preparedItemNames;
@@ -83,8 +81,7 @@ let isActivelyCopyingImage = false;
 
 
 /* -------- scripts/Init.js -------- */
-$(document).ready(() =>
-{
+$(document).ready(() => {
     itemsPerRowSlider = $("#itemsPerRowSlider");
     itemsPerRowLabel = $("#itemsPerRowLabel");
     itemNameInput = $("#itemNameInput");
@@ -139,11 +136,10 @@ $(document).ready(() =>
 
     copyImageLoadingWheel = $("#copyImageLoadingWheel");
 
-    fuzzyMatchesHolder = $("#fuzzyMatchesHolder");
+    fuzzyMatchesHolderItemSearch = $("#fuzzyMatchesHolderItemSearch");
+    fuzzyMatchesHolderPriceCalc = $("#fuzzyMatchesHolderPriceCalc");
 
-
-    itemsPerRowSlider.on("input", (event) =>
-    {
+    itemsPerRowSlider.on("input", (event) => {
         itemsPerRow = parseInt(event.target.value); // must convert to integer/number (since I do + calculations with it and don't want it to concat like a string)
         itemsPerRowLabel.text(itemsPerRow);
         updateItemLayout();
@@ -152,45 +148,40 @@ $(document).ready(() =>
     });
 
 
-    itemNameInput.on("focus", updateFuzzyMatches);
-    itemNameInput.on("blur", () =>
-    {
-        fuzzyMatchesHolder.empty();
+    itemNameInput.on("focus", () => updateFuzzyMatches(itemNameInput, 'itemSearch'));
+    itemNameInput.on("blur", () => {
+        fuzzyMatchesHolderItemSearch.empty();
     });
 
-    itemNameInput.on("keydown", (e) =>
-    {
+    itemNameInput.on("keydown", (e) => {
         // should use key to get the value representation of the input, allowing numpad numbers to show up like normal numbers ( https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key and https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code )
-        if(e.key.length !== 1 || e.key < '0' || e.key > '9')
+        if (e.key.length !== 1 || e.key < '0' || e.key > '9')
             return;
         let selection = e.key - '0';
-        if(selection === 0)
+        if (selection === 0)
             selection = 10;
 
-        const buttons = fuzzyMatchesHolder.find("button");
-        if(buttons.length < selection)
+        const buttons = fuzzyMatchesHolderItemSearch.find("button");
+        if (buttons.length < selection)
             return;
 
-        buttons.eq(selection - 1).trigger("mousedown", {usedKeyboard: true});
+        buttons.eq(selection - 1).trigger("mousedown", { usedKeyboard: true });
         event.preventDefault();
     });
-    itemNameInput.on("keyup", (e) =>
-    {
+    itemNameInput.on("keyup", (e) => {
         handleAddingItem(e);
 
         // this should be done AFTER handling adding the item, since we want this to show no results if enter was pressed and the name input got wiped
-        updateFuzzyMatches();
+        updateFuzzyMatches(itemNameInput, 'itemSearch');
     });
     itemQuantityInput.on("keyup", handleAddingItem);
     itemPriceOrMultiplierInput.on("keyup", handleAddingItem);
     $("#itemSubmitButton").on("click", (e) => handleAddingItem(e, true));
-    $("#itemDeleteButton").on("click", (e) =>
-    {
+    $("#itemDeleteButton").on("click", (e) => {
         // want to return early if there was no item name (otherwise, the item quantity input's value would stay at 0 because handleAddingItem() would return early without doing anything)
-        if(!formatItemName(itemNameInput.val()).length)
-        {
+        if (!formatItemName(itemNameInput.val()).length) {
             // done to be consistent with Submit; clicking Submit reselects the name field even when it is empty (when this setting is enabled)
-            if(shouldRefocusNameOnSubmit)
+            if (shouldRefocusNameOnSubmit)
                 itemNameInput.trigger("select");
 
             return;
@@ -211,8 +202,7 @@ $(document).ready(() =>
     // TODO -- all of this event stuff seems to be identical for both the settings and changelog popups (and probably for potential future ones as well); I should probably turn at least part of this into some function with parameters for the corresponding jquery objects/selectors (for show button, hide button, background, etc.)
 
     // TODO -- I might want to eventually move this css stuff to a class, then use classList to add/remove these classes from the respective elements?  https://developer.mozilla.org/en-US/docs/Web/API/Element/classList
-    settingsOverlay.showButton.on("click", () =>
-    {
+    settingsOverlay.showButton.on("click", () => {
         settingsOverlay.overlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         // have to set both due to how I'm hiding overflow-x via css (this might not actually be required; TODO -- see if the css file actually needs html and body to both have overflow set; it seems like both should be set to prevent running into issues though: https://stackoverflow.com/questions/41506456/why-body-overflow-not-working )
@@ -220,14 +210,12 @@ $(document).ready(() =>
         // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
         screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
-    settingsOverlay.hideButton.on("click", () =>
-    {
+    settingsOverlay.hideButton.on("click", () => {
         settingsOverlay.overlay.prop("hidden", true);
         $("html, body").css("overflow-y", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
-    settingsOverlay.background.on("click", () =>
-    {
+    settingsOverlay.background.on("click", () => {
         settingsOverlay.hideButton.trigger("click");
     });
 
@@ -246,8 +234,7 @@ $(document).ready(() =>
     */
 
     // want to update the layout after loading from local storage, but only after the coin image has loaded
-    coinImagePromise.then(() =>
-    {
+    coinImagePromise.then(() => {
         updateItemLayout();
     });
 
@@ -263,13 +250,11 @@ $(document).ready(() =>
     // I could alternatively use .html(), but that would cause issues with how the user might want to format their message, such as <Partials Accepted>
     bottomTextSettingInput.val(bottomText[0].innerText);
     // on input for showing live modifications in the background (behind the settings popup)
-    bottomTextSettingInput.on("input", event =>
-    {
+    bottomTextSettingInput.on("input", event => {
         bottomText[0].innerText = event.target.value;
     });
     // on change for when focus is lost to the input area, which "commits" the changes to local storage as well
-    bottomTextSettingInput.on("change", event =>
-    {
+    bottomTextSettingInput.on("change", event => {
         bottomText[0].innerText = event.target.value;
 
         saveAllToLocalStorage();
@@ -277,8 +262,7 @@ $(document).ready(() =>
         // I only do this on change and not on input because I fear that it would cause too much lag/input delay from processing this
         rescaleScreenshotRegion();
     });
-    bottomText.on("click", () =>
-    {
+    bottomText.on("click", () => {
         settingsOverlay.showButton.trigger("click");
         // bottomTextSettingInput[0].scrollIntoView(false); // ensures that the textarea is visible/on screen (and puts it at the bottom so that it won't overlap with the x/close button)
         bottomTextSettingInput[0].scrollIntoView(); // ensures that the textarea is visible/on screen (and puts it at the top; for some reason, iOS doesn't do the normal behavior of shifting the page up when showing the keyboard after doing it this way)
@@ -288,8 +272,7 @@ $(document).ready(() =>
 
 
     // (only fires once the slider is released)
-    itemsPerRowSlider.on("change", () =>
-    {
+    itemsPerRowSlider.on("change", () => {
         saveAllToLocalStorage();
     });
 
@@ -298,10 +281,8 @@ $(document).ready(() =>
     textListSeparatorRadios.eq(textListSeparatorSelectedRadio).prop("checked", true);
     textListCustomSeparatorInput[0].disabled = textListSeparatorRadios[textListSeparatorSelectedRadio].id !== "textListSeparatorCustomRadio";
 
-    textListSeparatorRadios.each((i, elem) =>
-    {
-        $(elem).on("click", i, (event) =>
-        {
+    textListSeparatorRadios.each((i, elem) => {
+        $(elem).on("click", i, (event) => {
             textListSeparatorSelectedRadio = event.data;
 
             // textListCustomSeparatorInput[0].disabled = event.target.id !== "textListSeparatorCustomRadio";
@@ -311,29 +292,35 @@ $(document).ready(() =>
         });
     });
 
-    textListCustomSeparatorInput.on("change", (event) =>
-    {
+    textListCustomSeparatorInput.on("change", (event) => {
         textListSeparatorCustomRadio.val(event.target.value);
 
         saveAllToLocalStorage();
     });
 
-    textListFormatInput.on("change", () =>
-    {
+    textListFormatInput.on("change", () => {
         saveAllToLocalStorage();
     });
 
-    priceCalculationItemInput.on("change", async (event) =>
-    {
+    priceCalculationItemInput.on("focus", () => updateFuzzyMatches(priceCalculationItemInput, 'priceCalc'));
+    priceCalculationItemInput.on("blur", () => {
+        fuzzyMatchesHolderPriceCalc.empty();
+    });
+    priceCalculationItemInput.on("keyup", (e) => {
+        handleAddingItem(e);
+
+        // this should be done AFTER handling adding the item, since we want this to show no results if enter was pressed and the name input got wiped
+        updateFuzzyMatches(priceCalculationItemInput, 'priceCalc');
+    });
+
+    priceCalculationItemInput.on("change", async (event) => {
         let itemNameFormatted = formatItemName(event.target.value);
         let itemUrl, itemMaxPrice;
-        try
-        {
+        try {
             itemUrl = await getImageUrl(itemNameFormatted);
             itemMaxPrice = await getMaxPrice(itemNameFormatted);
         }
-        catch
-        {
+        catch {
             // default to diamond ring for invalid item names
             itemNameFormatted = "Diamond_Ring";
 
@@ -344,7 +331,7 @@ $(document).ready(() =>
         priceCalculationItem = new Item(itemNameFormatted, undefined, itemUrl, undefined, itemMaxPrice);
 
         // TODO -- it might be better to just always make sure price gets immediately updated tbh (although, enabling price calc mode or showing of the price in screenshot will run update total price themselves)
-        if(getIsInPriceCalculationMode() || getIsPriceShownInScreenshot())
+        if (getIsInPriceCalculationMode() || getIsPriceShownInScreenshot())
             updateTotalPrice();
         saveAllToLocalStorage();
     });
@@ -353,56 +340,49 @@ $(document).ready(() =>
 
 
     // TODO -- should I be using change event instead of click event for checkboxes (along with any input element variants)?  Resources such as https://stackoverflow.com/questions/3442322/jquery-checkbox-event-handling make it sound like click doesn't work for certain things, but they do seem to (which is likely due to how old this so question is).  This resource seems to better explain; in my use case, they are pretty much identical, though there is a potential distinction: https://stackoverflow.com/questions/11205957/jquery-difference-between-change-and-click-event-of-checkbox
-    showPriceInScreenshotCheckBox.on("click", () =>
-    {
+    showPriceInScreenshotCheckBox.on("click", () => {
         let wasShowing = getIsPriceShownInScreenshot();
         screenshotPriceHolder.prop("hidden", wasShowing);
 
         showTotalInNormalModeCheckBox.prop("disabled", wasShowing);
 
-        if(!wasShowing)
+        if (!wasShowing)
             updateTotalPrice();
         saveAllToLocalStorage();
     });
 
-    showTotalInNormalModeCheckBox.on("click", () =>
-    {
+    showTotalInNormalModeCheckBox.on("click", () => {
         shouldShowTotalInNormalMode = !shouldShowTotalInNormalMode;
 
         updateTotalPrice();
         saveAllToLocalStorage();
     });
 
-    hidePriceOrMultiplierCheckBox.on("click", () =>
-    {
+    hidePriceOrMultiplierCheckBox.on("click", () => {
         shouldHidePriceOrMultiplier = !shouldHidePriceOrMultiplier;
 
         updateItemLayout();
         saveAllToLocalStorage();
     });
 
-    defaultQuantityInput.on("change", (event) =>
-    {
+    defaultQuantityInput.on("change", (event) => {
         // TODO -- should this instead be set within saveAllToLocalStorage()?  Probably not...
         defaultQuantity = event.target.value;
 
         saveAllToLocalStorage();
     });
-    defaultPriceOrMultiplierInput.on("change", (event) =>
-    {
+    defaultPriceOrMultiplierInput.on("change", (event) => {
         // TODO -- should this instead be set within saveAllToLocalStorage()?  Probably not...
         defaultPriceOrMultiplier = event.target.value;
 
         saveAllToLocalStorage();
     });
-    refocusNameOnSubmitCheckBox.on("click", () =>
-    {
+    refocusNameOnSubmitCheckBox.on("click", () => {
         shouldRefocusNameOnSubmit = !shouldRefocusNameOnSubmit;
 
         saveAllToLocalStorage();
     });
-    ignoreLocaleCheckBox.on("click", () =>
-    {
+    ignoreLocaleCheckBox.on("click", () => {
         shouldIgnoreLocale = !shouldIgnoreLocale;
 
         updateTotalPrice();
@@ -415,10 +395,8 @@ $(document).ready(() =>
 
     $("#copyAsTextListButton").on("click", copyAsTextListToClipboard);
 
-    $("#clearAllButton").on("click", () =>
-    {
-        if(confirm("Are you sure?  This will clear the items currently added and can't be undone."))
-        {
+    $("#clearAllButton").on("click", () => {
+        if (confirm("Are you sure?  This will clear the items currently added and can't be undone.")) {
             items.clear();
             updateItemLayout();
 
@@ -429,8 +407,7 @@ $(document).ready(() =>
 
     disableOutsidePriceCalculationModeElems.prop("disabled", true);
 
-    $("#priceCalculationToggleButton").on("click", () =>
-    {
+    $("#priceCalculationToggleButton").on("click", () => {
         // MUST use currentTarget (or just reference priceCalculationToggleButton); event.target gets set to the span if it is the one actually clicked ( https://developer.mozilla.org/en-US/docs/Web/API/Event/currentTarget )
         // TODO -- maybe change all even.target's to even.currentTarget in my code?
         const toggleButton = event.currentTarget;
@@ -445,15 +422,13 @@ $(document).ready(() =>
         totalSelectedPriceArea.prop("hidden", wasEnabled);
         priceCalculationModeSelectionInfo.prop("hidden", wasEnabled);
 
-        if(wasEnabled)
-        {
+        if (wasEnabled) {
             // disable it
 
             priceCalculationModeStateSpan.text("Enable"); // says the "opposite," since that's what it will change the state to on click
             toggleButton.classList.remove("selected");
         }
-        else
-        {
+        else {
             // enable it
 
             priceCalculationModeStateSpan.text("Disable"); // says the "opposite," since that's what it will change the state to on click
@@ -464,35 +439,31 @@ $(document).ready(() =>
         updateItemLayout();
     });
 
-    $("#selectAllButton").on("click", () =>
-    {
+    $("#selectAllButton").on("click", () => {
         const cells = $("#itemTable td");
         setSelectedStateAll(items.values(), cells, true);
 
         updateTotalPrice();
 
         // need to update what items are and aren't visible now that all items have been selected (even previously hidden ones)
-        if(shouldHideUnselectedItems)
+        if (shouldHideUnselectedItems)
             updateItemLayout();
     });
 
-    $("#clearSelectionButton").on("click", () =>
-    {
+    $("#clearSelectionButton").on("click", () => {
         const cells = $("#itemTable td");
         setSelectedStateAll(items.values(), cells, false);
 
         updateTotalPrice();
 
         // need to update what items are and aren't visible now that all items have been deselected (even previously visible ones)
-        if(shouldHideUnselectedItems)
+        if (shouldHideUnselectedItems)
             updateItemLayout();
     });
 
-    $("#subtractSelectedQuantitiesButton").on("click", () =>
-    {
-        for(let item of items.values())
-        {
-            if(!item.isSelected)
+    $("#subtractSelectedQuantitiesButton").on("click", () => {
+        for (let item of items.values()) {
+            if (!item.isSelected)
                 continue;
 
             item.quantity -= item.customQuantity ?? item.quantity;
@@ -500,7 +471,7 @@ $(document).ready(() =>
             item.customQuantity = undefined;
 
             // it should be fine to remove elements from a map while iterating over it according to https://stackoverflow.com/questions/35940216/es6-is-it-dangerous-to-delete-elements-from-set-map-during-set-map-iteration
-            if(item.quantity <= 0)
+            if (item.quantity <= 0)
                 items.delete(item.name);
 
             // TODO - Should items that have a >0 quantity left stay selected?  On the one hand, one might consider custom quantities to be all you selected; on the other hand, one might consider custom quantities to be just part of the whole currently being worked on in this moment (which means that after subtracting said amount, they still want to work with the rest of said item's quantity and/or keep it selected).
@@ -512,11 +483,9 @@ $(document).ready(() =>
         saveAllToLocalStorage();
     });
 
-    $("#deleteSelectedButton").on("click", () =>
-    {
-        for(let item of items.values())
-        {
-            if(item.isSelected)
+    $("#deleteSelectedButton").on("click", () => {
+        for (let item of items.values()) {
+            if (item.isSelected)
                 items.delete(item.name);
         }
 
@@ -525,10 +494,8 @@ $(document).ready(() =>
         saveAllToLocalStorage();
     });
 
-    $("#resetCustomValuesButton").on("click", () =>
-    {
-        for(let item of items.values())
-        {
+    $("#resetCustomValuesButton").on("click", () => {
+        for (let item of items.values()) {
             item.customQuantity = undefined;
             item.customPriceOrMultiplier = undefined;
         }
@@ -536,8 +503,7 @@ $(document).ready(() =>
         updateItemLayout();
     });
 
-    $("#equationVisibilityToggleButton").on("click", () =>
-    {
+    $("#equationVisibilityToggleButton").on("click", () => {
         // TODO - might want to use something like this for the price calculation toggle, since it can be tied to the total price div area
         const wasHidden = totalSelectedPriceEquationHolder.is("[hidden]");
 
@@ -545,19 +511,18 @@ $(document).ready(() =>
         totalSelectedPriceEquationHolder.prop("hidden", !wasHidden);
 
         const toggleButton = event.currentTarget;
-        if(wasHidden)
+        if (wasHidden)
             toggleButton.classList.add("selected");
         else
             toggleButton.classList.remove("selected");
     });
 
-    $("#unselectedItemsVisibilityToggleButton").on("click", () =>
-    {
+    $("#unselectedItemsVisibilityToggleButton").on("click", () => {
         const wasHidden = shouldHideUnselectedItems;
         unselectedItemsVisibilityStateSpan.text(wasHidden ? "Hide" : "Show");
 
         const toggleButton = event.currentTarget;
-        if(wasHidden)
+        if (wasHidden)
             toggleButton.classList.remove("selected");
         else
             toggleButton.classList.add("selected");
@@ -571,22 +536,19 @@ $(document).ready(() =>
 
     setUpChangelog();
 
-    changelogOverlay.showButton.on("click", () =>
-    {
+    changelogOverlay.showButton.on("click", () => {
         changelogOverlay.overlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         $("html, body").css("overflow-y", "hidden");
         // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
         screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
-    changelogOverlay.hideButton.on("click", () =>
-    {
+    changelogOverlay.hideButton.on("click", () => {
         changelogOverlay.overlay.prop("hidden", true);
         $("html, body").css("overflow-y", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
-    changelogOverlay.background.on("click", () =>
-    {
+    changelogOverlay.background.on("click", () => {
         changelogOverlay.hideButton.trigger("click");
     });
 
@@ -594,42 +556,36 @@ $(document).ready(() =>
 
 
 
-    failedCopyOverlay.hideButton.on("click", () =>
-    {
+    failedCopyOverlay.hideButton.on("click", () => {
         failedCopyOverlay.overlay.prop("hidden", true);
         $("html, body").css("overflow-y", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
-    failedCopyOverlay.background.on("click", () =>
-    {
+    failedCopyOverlay.background.on("click", () => {
         failedCopyOverlay.hideButton.trigger("click");
     });
 
 
 
-    contactOverlay.showButton.on("click", () =>
-    {
+    contactOverlay.showButton.on("click", () => {
         contactOverlay.overlay.prop("hidden", false);
         // disables scrolling the main page and removes the scrollbar from the side while the settings button is focused ( https://stackoverflow.com/questions/9280258/prevent-body-scrolling-but-allow-overlay-scrolling )
         $("html, body").css("overflow-y", "hidden");
         // prevents the screenshot region from shifting over to the right due to the scrollbar now missing ( https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page and https://css-tricks.com/elegant-fix-jumping-scrollbar-issue/ and https://aykevl.nl/2014/09/fix-jumping-scrollbar )
         screenshotRegion.css("margin-right", "calc(100vw - 100%)");
     });
-    contactOverlay.hideButton.on("click", () =>
-    {
+    contactOverlay.hideButton.on("click", () => {
         contactOverlay.overlay.prop("hidden", true);
         $("html, body").css("overflow-y", "visible");
         screenshotRegion.css("margin-right", "unset");
     });
-    contactOverlay.background.on("click", () =>
-    {
+    contactOverlay.background.on("click", () => {
         contactOverlay.hideButton.trigger("click");
     });
 
 
 
-    prepareAllItemNames().then(prepared =>
-    {
+    prepareAllItemNames().then(prepared => {
         preparedItemNames = prepared;
     });
 
@@ -637,7 +593,7 @@ $(document).ready(() =>
 
     // prevents zooming in on input/textarea focus in iOS
     // TODO -- maybe make this some class and/or css media query-related thing?
-    if(isRunningIOS())
+    if (isRunningIOS())
         $("input, textarea").css("font-size", "16px");
 
 
@@ -649,12 +605,10 @@ $(document).ready(() =>
 
 /* -------- scripts/Overlay.js -------- */
 // TODO -- maybe make show and hide functions?
-class Overlay
-{
+class Overlay {
     // TODO -- extraIds is a bad name; it should be something pertaining to extra overlay elements (showButton, imageHolder, etc.)
     // TODO - I might want to make a list of dictionary mappings from extra overlay element name to function for settings up (since I have repeated code pertaining to showButtons)
-    constructor(overlayId, ...extraIds)
-    {
+    constructor(overlayId, ...extraIds) {
         this.overlay = $(`#${overlayId}`);
 
         this.background = this.overlay.find(".overlayBackground");
@@ -663,9 +617,8 @@ class Overlay
         this.inner = this.overlay.find(".overlayInner");
 
         // add the extra ids as valid this. entries
-        for(let extraId of extraIds)
-        {
-            if(!extraId.length)
+        for (let extraId of extraIds) {
+            if (!extraId.length)
                 continue;
 
             const extraIdFirstUpper = extraId[0].toUpperCase() + extraId.slice(1);
@@ -679,39 +632,36 @@ class Overlay
 // There are more operators than the ones here technically supported by math.js, but I feel like these are all the "reasonable" ones to support for the automatic prepending of the old quantity/custom quantity ( https://mathjs.org/docs/expressions/syntax.html )
 // TODO -- I could theoretically make this a set, but that's probably not a good idea since the "keys" have differing lengths and I'm just looking for whether a given equation string starts with one of these keys
 const operators = ['+', '-', '*', '/', '^', '%', "mod", '&', '|', "<<", ">>>", ">>"]; // >>> should be before >> to ensure the full operator gets removed then readded later (if >> was first, ">>> 5" would only remove the first 2 '>' leaving "> 5")
-function handleAddingItem(e, usedSubmitButton = false)
-{
+function handleAddingItem(e, usedSubmitButton = false) {
     // only want the name box to have the invalid red border until the user starts typing again (tabbing into this textbox also cancels it; unfortunately, this gets removed almost immediately if the user starts typing right after pressing enter, since it takes a bit of time for the fetch to occur and for the invalid class to be added, if needed)
-    if(itemNameInput.hasClass("invalid"))
+    if (itemNameInput.hasClass("invalid"))
         itemNameInput.removeClass("invalid");
 
 
     // Don't want to accept changes while trying to copy the image
     // TODO -- I don't handle actively copying image yet for anything related to price calculation mode; maybe I should do that?
-    if(isActivelyCopyingImage)
+    if (isActivelyCopyingImage)
         return;
 
     // TODO -- might want to be using e.key instead
-    if(!usedSubmitButton && e.code !== "Enter")
+    if (!usedSubmitButton && e.code !== "Enter")
         return;
 
     // at this point, the user has attempted to submit (or delete), so the input should get reselected (if the setting is enabled; this mostly just matters for people who click the submit button instead of enter)
     // note that this also occurs when Delete button gets clicked
-    if(shouldRefocusNameOnSubmit)
+    if (shouldRefocusNameOnSubmit)
         itemNameInput.trigger("select");
 
     const itemNameFormatted = formatItemName(itemNameInput.val());
-    if(!itemNameFormatted.length)
+    if (!itemNameFormatted.length)
         return;
 
     let itemQuantity, prependedQuantityOperator = "";
     let itemQuantityEquation = itemQuantityInput.val().trim();
     // only want to separate starting operator if the item already exists (if the item doesn't exist, the whole quantity should be evaluated as one equation)
-    if(items.has(itemNameFormatted))
-    {
-        for(let operator of operators)
-        {
-            if(!itemQuantityEquation.startsWith(operator))
+    if (items.has(itemNameFormatted)) {
+        for (let operator of operators) {
+            if (!itemQuantityEquation.startsWith(operator))
                 continue;
 
             prependedQuantityOperator = operator;
@@ -720,21 +670,18 @@ function handleAddingItem(e, usedSubmitButton = false)
         }
     }
 
-    try
-    {
+    try {
         // rest of equation is calculated beforehand so that addItem() gets an actual value
         itemQuantity = itemQuantityEquation.length ? math.evaluate(itemQuantityEquation) : 0;
     }
-    catch(e)
-    {
+    catch (e) {
         console.log("Unable to evaluate quantity --", e);
         return;
     }
 
     addItem(itemNameFormatted, itemQuantity, itemPriceOrMultiplierInput.val(), prependedQuantityOperator)
         .then(() => updateItemLayout())
-        .catch(e =>
-        {
+        .catch(e => {
             console.log("Failed to add item and update layout --", e);
 
             itemNameInput.addClass("invalid");
@@ -746,11 +693,9 @@ function handleAddingItem(e, usedSubmitButton = false)
 }
 
 
-class Item
-{
+class Item {
     static fieldsToOmitFromLocalStorage = new Set(["customQuantity", "customPriceOrMultiplier", "isSelected"]);
-    constructor(name, quantity, url, priceOrMultiplier, maxPrice)
-    {
+    constructor(name, quantity, url, priceOrMultiplier, maxPrice) {
         this.name = name;
         this.quantity = quantity;
         this.url = url;
@@ -763,25 +708,22 @@ class Item
         this.isSelected = false;
     }
 
-    getHumanReadableName()
-    {
+    getHumanReadableName() {
         return this.name.replaceAll("_", " ");
     }
 
     // returns [totalPrice, equation, error, warning]
-    calculateTotalPrice(shouldIgnoreCustomValues = false)
-    {
+    calculateTotalPrice(shouldIgnoreCustomValues = false) {
         let quantity = this.customQuantity ?? this.quantity,
             priceOrMultiplier = this.customPriceOrMultiplier ?? this.priceOrMultiplier,
             maxPrice = this.maxPrice;
 
-        if(shouldIgnoreCustomValues)
-        {
+        if (shouldIgnoreCustomValues) {
             quantity = this.quantity;
             priceOrMultiplier = this.priceOrMultiplier;
         }
 
-        if(!maxPrice)
+        if (!maxPrice)
             return [NaN, "NaN", `${this.getHumanReadableName()} doesn't have a valid maximum price (${maxPrice}).`];
 
 
@@ -789,31 +731,28 @@ class Item
 
         let price, mult;
         let warning;
-        if(!priceOrMultiplier.length)
-        {
+        if (!priceOrMultiplier.length) {
             mult = "1";
-            warning = `The price/multiplier for ${this.getHumanReadableName()} was empty, so it was defaulted to 1x.` ;
+            warning = `The price/multiplier for ${this.getHumanReadableName()} was empty, so it was defaulted to 1x.`;
         }
-        else if(priceOrMultiplier.endsWith('x'))
+        else if (priceOrMultiplier.endsWith('x'))
             mult = priceOrMultiplier.slice(0, -1);
-        else if(priceOrMultiplier.endsWith('k'))
+        else if (priceOrMultiplier.endsWith('k'))
             price = `(${priceOrMultiplier.slice(0, -1)})*10^3`;
-        else if(priceOrMultiplier.endsWith('m'))
+        else if (priceOrMultiplier.endsWith('m'))
             price = `(${priceOrMultiplier.slice(0, -1)})*10^6`;
         else
             price = priceOrMultiplier;
 
-        if(mult)
+        if (mult)
             price = `${maxPrice}*(${mult})`;
         // I'm doing this so that it can be shown to the user in full
         price = `${quantity}*(${price})`;
 
-        try
-        {
+        try {
             return [math.evaluate(price), price, undefined, warning];
         }
-        catch(e)
-        {
+        catch (e) {
             console.log(e);
             // I believe that it would only ever be an issue with the price/mult?
             // return [NaN, price, `${this.getHumanReadableName()} has some invalid value (quantity: ${quantity}, price/multiplier: ${priceOrMultiplier}, max price: ${maxPrice} -- equation: ${price}).`, warning];
@@ -823,22 +762,19 @@ class Item
 }
 
 
-function addItem(itemNameFormatted, itemQuantity, itemPriceOrMultiplier, prependedQuantityOperator = "")
-{
+function addItem(itemNameFormatted, itemQuantity, itemPriceOrMultiplier, prependedQuantityOperator = "") {
     const isInPriceCalculationMode = getIsInPriceCalculationMode();
 
     // the itemQuantity is already completely calculated, but we need to ensure that it isn't floating-point
-    if(!prependedQuantityOperator)
+    if (!prependedQuantityOperator)
         itemQuantity = Math.floor(itemQuantity);
 
-    if(items.has(itemNameFormatted))
-    {
+    if (items.has(itemNameFormatted)) {
         const currItem = items.get(itemNameFormatted);
 
         // modifies the custom fields instead when in price calculation mode
-        if(isInPriceCalculationMode)
-        {
-            if(prependedQuantityOperator.length)
+        if (isInPriceCalculationMode) {
+            if (prependedQuantityOperator.length)
                 itemQuantity = Math.floor(math.evaluate(`${currItem.customQuantity ?? currItem.quantity} ${prependedQuantityOperator} ${itemQuantity}`));
             // only stores custom if it differs; custom quantity set to <=0 defaults back to normal quantity, and custom price/mult gets wiped if its field becomes empty (otherwise the user might try to wipe it out, only to find out that it makes the mult default to 1x)
             currItem.customQuantity = (itemQuantity > 0 && itemQuantity !== currItem.quantity) ? itemQuantity : undefined;
@@ -850,19 +786,18 @@ function addItem(itemNameFormatted, itemQuantity, itemPriceOrMultiplier, prepend
             return Promise.resolve();
         }
 
-        if(prependedQuantityOperator.length)
+        if (prependedQuantityOperator.length)
             itemQuantity = Math.floor(math.evaluate(`${currItem.quantity} ${prependedQuantityOperator} ${itemQuantity}`));
 
-        if(itemQuantity > 0)
-        {
+        if (itemQuantity > 0) {
             const prevQuantity = currItem.quantity;
             currItem.quantity = itemQuantity;
             currItem.priceOrMultiplier = itemPriceOrMultiplier;
 
             // need to wipe out custom values if they now match the new quantity/prices
-            if(currItem.customQuantity === currItem.quantity || (currItem.customQuantity > currItem.quantity && currItem.customQuantity < prevQuantity)) // after updating an item's actual quantity, custom quantities above it should reset/"snap" back to the new quantity (unless it was already above it; custom quantity won't ever equal previous quantity, since it would have just gotten reset to undefined)
+            if (currItem.customQuantity === currItem.quantity || (currItem.customQuantity > currItem.quantity && currItem.customQuantity < prevQuantity)) // after updating an item's actual quantity, custom quantities above it should reset/"snap" back to the new quantity (unless it was already above it; custom quantity won't ever equal previous quantity, since it would have just gotten reset to undefined)
                 currItem.customQuantity = undefined;
-            if(currItem.customPriceOrMultiplier === currItem.priceOrMultiplier)
+            if (currItem.customPriceOrMultiplier === currItem.priceOrMultiplier)
                 currItem.customPriceOrMultiplier = undefined;
         }
         else
@@ -874,15 +809,14 @@ function addItem(itemNameFormatted, itemQuantity, itemPriceOrMultiplier, prepend
     }
 
     // don't want to add new items in this mode
-    if(isInPriceCalculationMode)
+    if (isInPriceCalculationMode)
         return Promise.resolve();
 
-    if(itemQuantity <= 0)
+    if (itemQuantity <= 0)
         return Promise.resolve();
 
     return getImageUrl(itemNameFormatted)
-        .then(async imageUrl =>
-        {
+        .then(async imageUrl => {
             console.log(imageUrl);
 
             const maxPrice = await getMaxPrice(itemNameFormatted);
@@ -894,10 +828,9 @@ function addItem(itemNameFormatted, itemQuantity, itemPriceOrMultiplier, prepend
 }
 
 
-function formatItemName(itemName)
-{
+function formatItemName(itemName) {
     const itemNameTrimmed = itemName.trim();
-    if(!itemNameTrimmed.length)
+    if (!itemNameTrimmed.length)
         return itemNameTrimmed;
 
     const unabbreviatedItemName = handleAbbreviations(itemNameTrimmed);
@@ -907,8 +840,7 @@ function formatItemName(itemName)
     return itemNameFormatted;
 }
 
-function handleAbbreviations(itemName)
-{
+function handleAbbreviations(itemName) {
     return abbreviationMapping.get(itemName.toLowerCase()) ?? itemName;
 }
 
@@ -921,19 +853,16 @@ const specialNameMapping = new Map([
     ["Peanut_Butter_And_Jelly_Sandwich", "Peanut_Butter_and_Jelly_Sandwich"],
     ["Frutti_Di_Mare_Pizza", "Frutti_di_Mare_Pizza"]
 ]);
-function handleSpecialNames(itemName)
-{
+function handleSpecialNames(itemName) {
     return specialNameMapping.get(itemName) ?? itemName;
 }
 
-function getImageUrl(itemNameTitleSnakeCase)
-{
+function getImageUrl(itemNameTitleSnakeCase) {
     // https://www.mediawiki.org/wiki/API:Imageinfo
     // scaled down images don't work cross-site (it will work locally, but not on the hosted site)
     return fetch(`https://hayday.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:${itemNameTitleSnakeCase}.png&format=json&origin=*`)
         .then(response => response.json())
-        .then(data =>
-        {
+        .then(data => {
             // console.log(data);
             const pages = data.query.pages;
             const pageId = Object.keys(pages)[0];
@@ -945,16 +874,15 @@ function getImageUrl(itemNameTitleSnakeCase)
 }
 
 let previousSelection;
-function updateItemLayout()
-{
+function updateItemLayout() {
     itemTable.empty();
 
     // must do this up-front to ensure that the price gets properly update in the event that 1) all the items get cleared out, or 2) all the visible items get cleared out (if in price calc mode with hide unselected)
     const shouldShowSelection = getIsInPriceCalculationMode();
-    if(shouldShowSelection || getIsPriceShownInScreenshot())
+    if (shouldShowSelection || getIsPriceShownInScreenshot())
         updateTotalPrice();
 
-    if(!items.size)
+    if (!items.size)
         return;
 
 
@@ -962,12 +890,11 @@ function updateItemLayout()
 
     let itemsUnsorted = [...items.values()];
     // filter out unselected if the user wants them hidden
-    if(shouldShowSelection && shouldHideUnselectedItems)
-    {
+    if (shouldShowSelection && shouldHideUnselectedItems) {
         itemsUnsorted = itemsUnsorted.filter(item => item.isSelected);
 
         // nothing to show (since all of the items got filtered out), so we are done (also don't need to worry about updating the total price, since it always gets updated after clicking on any item's cell)
-        if(!itemsUnsorted.length)
+        if (!itemsUnsorted.length)
             return;
     }
     const itemsSortedDescending = itemsUnsorted.sort((item1, item2) => item2.quantity - item1.quantity);
@@ -976,55 +903,49 @@ function updateItemLayout()
     let rowCt = Math.ceil(itemCt / itemsPerRow);
 
     let i = 0;
-    while(rowCt--)
-    {
+    while (rowCt--) {
         const tableRow = document.createElement("tr");
-        for(let j = 0; i < itemCt && j < itemsPerRow; i++, j++)
-        {
+        for (let j = 0; i < itemCt && j < itemsPerRow; i++, j++) {
             const currItem = itemsSortedDescending[i];
             const tableCell = document.createElement("td");
             tableCell.classList.add("itemCell");
 
-            if(shouldShowSelection && currItem.isSelected)
+            if (shouldShowSelection && currItem.isSelected)
                 tableCell.classList.add("selected");
 
             // must be mouseup to execute before the on click events for image, quantity, and label (since they must select the text after it has been overridden by this)
-            $(tableCell).on("mouseup", {index: i, item: currItem}, (event) =>
-            {
+            $(tableCell).on("mouseup", { index: i, item: currItem }, (event) => {
                 const item = event.data.item;
                 itemNameInput.val(item.getHumanReadableName());
                 itemQuantityInput.val(shouldShowSelection ? (item.customQuantity ?? item.quantity) : item.quantity);
                 itemPriceOrMultiplierInput.val(shouldShowSelection ? (item.customPriceOrMultiplier ?? item.priceOrMultiplier) : item.priceOrMultiplier);
 
-                if(!shouldShowSelection)
+                if (!shouldShowSelection)
                     return;
 
 
                 const index = event.data.index;
                 const [first, last] = [index, previousSelection ?? index].sort((n1, n2) => n1 - n2);
-                if(event.shiftKey) // range additive
+                if (event.shiftKey) // range additive
                 {
                     $("#itemTable td").slice(first, last + 1)
-                        .each((k, elem) =>
-                        {
+                        .each((k, elem) => {
                             const currItem = itemsSortedDescending[first + k];
                             setSelectedState(currItem, elem, true);
                         });
                 }
-                else if(event.altKey) // range subtractive; must use if else if... to make sure previousSelection always gets set
+                else if (event.altKey) // range subtractive; must use if else if... to make sure previousSelection always gets set
                 {
                     $("#itemTable td").slice(first, last + 1)
-                        .each((k, elem) =>
-                        {
+                        .each((k, elem) => {
                             const currItem = itemsSortedDescending[first + k];
                             setSelectedState(currItem, elem, false);
                         });
                 }
-                else if(event.ctrlKey) // range toggle
+                else if (event.ctrlKey) // range toggle
                 {
                     $("#itemTable td").slice(first, last + 1)
-                        .each((k, elem) =>
-                        {
+                        .each((k, elem) => {
                             const currItem = itemsSortedDescending[first + k];
                             setSelectedState(currItem, elem, !currItem.isSelected);
                         });
@@ -1043,70 +964,62 @@ function updateItemLayout()
             const image = document.createElement("img");
             image.src = currItem.url;
             image.classList.add("itemImage");
-            $(image).on("click", () =>
-            {
+            $(image).on("click", () => {
                 // only want to focus the item name input if not in price calculation mode
                 // TODO -- maybe the name input should never be focused in general, since it never really makes sense to want to keep all the same price and quantities, but change the name (effectively duplicating the item info but with a different item name)?
-                if(!shouldShowSelection)
+                if (!shouldShowSelection)
                     itemNameInput.trigger("select");
                 // need to update the layout to not include items that just got deselected; I am only putting this in the event handler for clicking on the image itself, since I want the user to be able to modify price/mult and quantity without the item temporarily disappearing
                 // this does cause the problem of clicking the border of the cell toggling the item, but not hiding it when the user wants them hidden (since this event only listens for clicking on the image itself, not anywhere in the cell)
                 // TODO -- I'm wondering if I should make clicking on quantity/price not change the state of the selection in general, though that could be a bit annoying if the user is trying to quickly select items.
-                else if(shouldHideUnselectedItems)
+                else if (shouldHideUnselectedItems)
                     updateItemLayout();
             });
 
             const quantityLabel = document.createElement("p");
             quantityLabel.innerText = currItem.quantity;
             quantityLabel.classList.add("label", "quantityLabel");
-            $(quantityLabel).on("click", () =>
-            {
+            $(quantityLabel).on("click", () => {
                 itemQuantityInput.trigger("select");
             });
 
             const priceLabel = document.createElement("p");
             priceLabel.innerHTML = formatItemPriceLabel(currItem.priceOrMultiplier); // using innerHTML so that coin image is shown
             priceLabel.classList.add("label", "priceLabel");
-            $(priceLabel).on("click", () =>
-            {
+            $(priceLabel).on("click", () => {
                 itemPriceOrMultiplierInput.trigger("select");
             });
-            if(shouldHidePriceOrMultiplier)
+            if (shouldHidePriceOrMultiplier)
                 priceLabel.style.display = "none";
 
             let customQuantityLabel, customPriceLabel;
-            if(shouldShowSelection)
-            {
+            if (shouldShowSelection) {
                 // TODO -- I feel like some of this stuff is redundant/repeated stuff from setSelectedState() (though this stuff isn't technically in the DOM yet)
-                if(currItem.customQuantity !== undefined)
-                {
+                if (currItem.customQuantity !== undefined) {
                     customQuantityLabel = document.createElement("p");
                     customQuantityLabel.innerText = currItem.customQuantity;
                     customQuantityLabel.classList.add("label", "customLabel", "customQuantityLabel");
-                    customQuantityLabel.hidden =  !currItem.isSelected;
-                    $(customQuantityLabel).on("click", () =>
-                    {
+                    customQuantityLabel.hidden = !currItem.isSelected;
+                    $(customQuantityLabel).on("click", () => {
                         itemQuantityInput.trigger("select");
                     });
 
                     // starts less visible since item is selected and has a custom quantity
-                    if(currItem.isSelected)
+                    if (currItem.isSelected)
                         quantityLabel.style.opacity = 0.5;
                 }
 
-                if(currItem.customPriceOrMultiplier !== undefined)
-                {
+                if (currItem.customPriceOrMultiplier !== undefined) {
                     customPriceLabel = document.createElement("p");
                     customPriceLabel.innerHTML = formatItemPriceLabel(currItem.customPriceOrMultiplier); // using innerHTML so that coin image is shown
                     customPriceLabel.classList.add("label", "customLabel", "customPriceLabel");
-                    customPriceLabel.hidden =  !currItem.isSelected;
-                    $(customPriceLabel).on("click", () =>
-                    {
+                    customPriceLabel.hidden = !currItem.isSelected;
+                    $(customPriceLabel).on("click", () => {
                         itemPriceOrMultiplierInput.trigger("select");
                     });
 
                     // starts less visible since item is selected and has a custom price/mult
-                    if(currItem.isSelected)
+                    if (currItem.isSelected)
                         priceLabel.style.opacity = 0.5;
                 }
             }
@@ -1114,9 +1027,9 @@ function updateItemLayout()
             tableCell.appendChild(image);
             tableCell.appendChild(quantityLabel);
             tableCell.appendChild(priceLabel);
-            if(customQuantityLabel)
+            if (customQuantityLabel)
                 tableCell.appendChild(customQuantityLabel);
-            if(customPriceLabel)
+            if (customPriceLabel)
                 tableCell.appendChild(customPriceLabel);
 
             tableRow.appendChild(tableCell);
@@ -1129,17 +1042,15 @@ function updateItemLayout()
     // rescaleScreenshotRegion();
 }
 
-function formatItemPriceLabel(priceOrMultiplier)
-{
+function formatItemPriceLabel(priceOrMultiplier) {
     const priceStr = String(priceOrMultiplier);
     const priceStrTrimmed = priceStr.trim();
     return priceOrMultiplier + (!priceStrTrimmed.length || priceStrTrimmed.endsWith('x') ? "" : `<img class="coin" src="${coinImageUrl}">`);
 }
 
 
-function copyImageToClipboard()
-{
-    if(isActivelyCopyingImage)
+function copyImageToClipboard() {
+    if (isActivelyCopyingImage)
         return;
     isActivelyCopyingImage = true;
 
@@ -1147,7 +1058,7 @@ function copyImageToClipboard()
     // for those of you reading this, I would appreciate if this doesn't get removed from the generated image
     createdBy.innerText = "jjcuber.github.io/hdig"; // used to say, "Tool Created by JJCUBER"
     createdBy.classList.add("watermark");
-    if(!$(".watermark").length) // only append if the watermark always visible on screen didn't get removed
+    if (!$(".watermark").length) // only append if the watermark always visible on screen didn't get removed
         screenshotRegion.append(createdBy);
 
     copyImageLoadingWheel.prop("hidden", false); // show loading wheel
@@ -1157,14 +1068,12 @@ function copyImageToClipboard()
     let screenshotBlob;
     let clipboardWrittenPromise;
     // In order for copying an image to clipboard on iOS to work, you HAVE to effectively do it directly in the click (more accurately, pointerup) event; this means that having some promises .then()'d is not "acceptable": https://stackoverflow.com/questions/65356108/how-to-use-clipboard-api-to-write-image-to-clipboard-in-safari  AND  https://stackoverflow.com/questions/62327358/javascript-clipboard-api-safari-ios-notallowederror-message  AND  https://webkit.org/blog/10247/new-webkit-features-in-safari-13-1/
-    if(isRunningIOS())
-    {
+    if (isRunningIOS()) {
         clipboardWrittenPromise = navigator.clipboard.write(
             [new ClipboardItem(
                 {
                     "image/png":
-                        (async () =>
-                        {
+                        (async () => {
                             // need to run a second time on iOS (it sounds like just returning the .toBlob call and .then()'ing it doesn't work based on https://github.com/bubkoo/html-to-image/issues/52#issuecomment-1255708420 , so that's why I'm awaiting it here [I don't think that would really be all so different from just returning and calling .then, but I will just do it like this since it seems to work])
                             // TODO -- it sounds like this might also happen with safari on mac occasionally?  I might might also want to check for the browser being safari.
                             await htmlToImage.toBlob(screenshotRegion[0]);
@@ -1183,21 +1092,19 @@ function copyImageToClipboard()
         // htmlToImage.toBlob(..., {canvasWidth: ..., canvasHeight: ..., width: ..., height: ...}) // there are options for canvas Width/Height, along with node's Width/Height, but they aren't really what I'm looking for (zooming out far on the page itself still modifies the scaling of everything)
         clipboardWrittenPromise = htmlToImage.toBlob(screenshotRegion[0])
             .then(blob => screenshotBlob = blob) // stores the blob in case the error is caught later (had to separate this since firefox doesn't have a ClipboardItem at all; the screenShot = blob code would never get parsed and cause the failed copy overly to never show)
-            .then(blob => new ClipboardItem({"image/png": blob}))
+            .then(blob => new ClipboardItem({ "image/png": blob }))
             .then(clipboardItem => navigator.clipboard.write([clipboardItem]));
     }
 
     clipboardWrittenPromise
         .then(createSuccessfulCopyNotification)
-        .catch(e =>
-        {
+        .catch(e => {
             console.log("Unable to generate image and/or copy it to clipboard --", e);
 
             createFailedCopyNotification();
 
             // show failed copy overlay if the screenshot was successfully generated
-            if(screenshotBlob)
-            {
+            if (screenshotBlob) {
                 failedCopyOverlay.imageHolder[0].src = window.URL.createObjectURL(screenshotBlob);
 
 
@@ -1210,8 +1117,7 @@ function copyImageToClipboard()
                 screenshotRegion.css("margin-right", "calc(100vw - 100%)");
             }
         })
-        .finally(() =>
-        {
+        .finally(() => {
             $(createdBy).remove();
             isActivelyCopyingImage = false;
 
@@ -1221,13 +1127,12 @@ function copyImageToClipboard()
         });
 }
 
-function copyAsTextListToClipboard()
-{
+function copyAsTextListToClipboard() {
     const itemStrs = [];
 
     const format = textListFormatInput.val();
     const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
-    for(let item of itemsSortedDescending)
+    for (let item of itemsSortedDescending)
         itemStrs.push(formatTextListItem(format, item));
 
     const textList = itemStrs.join(textListSeparatorRadios[textListSeparatorSelectedRadio].value);
@@ -1238,8 +1143,7 @@ function copyAsTextListToClipboard()
 }
 
 // maybe include Item somewhere in this function name
-function getMaxPrice(itemNameTitleSnakeCase)
-{
+function getMaxPrice(itemNameTitleSnakeCase) {
     const properPageName = handleSpecialPageNames(itemNameTitleSnakeCase);
     const url = "https://hayday.fandom.com/api.php?" +
         new URLSearchParams({
@@ -1253,15 +1157,13 @@ function getMaxPrice(itemNameTitleSnakeCase)
     return fetch(url)
         .then(response => response.json())
         .then(json => json.parse.text["*"])
-        .then(html =>
-        {
+        .then(html => {
             // const priceRange = $(html).find("aside.portable-infobox span[title='Coin(s)']").first().parent().text();
             const priceRange = $(html).find("aside.portable-infobox div[data-source='price']").children().text();
             const maxPrice = parseInt(priceRange.split(" to ")[1]);
             console.log(itemNameTitleSnakeCase, "max price:", maxPrice);
             return maxPrice;
-        }).catch(e =>
-        {
+        }).catch(e => {
             console.log(e);
             console.log(itemNameTitleSnakeCase, "max price:", NaN);
 
@@ -1276,25 +1178,21 @@ const specialPageNameMapping = new Map([
     ["Caffe_Latte", "Caffè_Latte"],
     ["Caffe_Mocha", "Caffè_Mocha"]
 ]);
-function handleSpecialPageNames(itemName)
-{
+function handleSpecialPageNames(itemName) {
     return specialPageNameMapping.get(itemName) ?? itemName;
 }
 
-async function ensureItemsHaveMaxPriceSet()
-{
+async function ensureItemsHaveMaxPriceSet() {
     let shouldSave = false;
-    for(let item of items.values())
-    {
+    for (let item of items.values()) {
         // conversion to JSON using stringify makes NaN become null, so I am adding it back here; this is to ensure any calculations with this value yield NaN, instead of something like 0 (null*5 === 0)
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
         // https://stackoverflow.com/questions/21896792/force-json-stringify-to-emit-nan-infinity-or-js-json-lib-that-does-so
-        if(item.maxPrice === null)
-        {
+        if (item.maxPrice === null) {
             item.maxPrice = NaN;
             continue;
         }
-        if(item.maxPrice !== undefined)
+        if (item.maxPrice !== undefined)
             continue;
 
         item.maxPrice = await getMaxPrice(item.name);
@@ -1302,32 +1200,30 @@ async function ensureItemsHaveMaxPriceSet()
 
         // updates the total price along the way if currently in price calculation mode (I'm doing this instead of only doing it once at the end so that the user can see the price updating as it gets loaded)
         // TODO -- I don't think I need || shouldShow... here currently, though I might want/need it if I allow for persistent selections at some point
-        if(getIsInPriceCalculationMode() || getIsPriceShownInScreenshot())
+        if (getIsInPriceCalculationMode() || getIsPriceShownInScreenshot())
             updateTotalPrice();
     }
 
     // I don't foresee any issues with this randomly saving (since this async function is called synchronously to prevent the page from getting stuck while this function executes) because any modification to the items elsewhere would ... never mind
     // this might cause issues, since it could save while in the middle of modifying an item abbreviation; if the user never "commits" these changes themself by closing out of the site (which might prevent the change event from occurring?), then some partially modified state would be saved randomly from this function; it might just be best to have this be redone each time the site loads until the user modifies something themself which forces a save all.
     // if(shouldSave)
-        // saveAllToLocalStorage();
+    // saveAllToLocalStorage();
 
 
     // the solution is to only save the items, since items don't carry any intermediate state (any modification to items is immediately saved to local storage)
-    if(shouldSave)
+    if (shouldSave)
         saveItemsToLocalStorage();
 }
 
 
-function formatTextListItem(format, item)
-{
+function formatTextListItem(format, item) {
     return format.replaceAll("{{name}}", item.getHumanReadableName())
         .replaceAll("{{quantity}}", item.quantity)
         .replaceAll("{{price}}", item.priceOrMultiplier);
 }
 
 
-function calculateTotalSelectedPrice()
-{
+function calculateTotalSelectedPrice() {
     let total = 0;
     let equations = [];
     // TODO -- I should instead filter this BEFORE sorting (doesn't change anything functionally, it's just more performant that way)
@@ -1336,9 +1232,8 @@ function calculateTotalSelectedPrice()
     // NOTE: this sorts by descending so that the price gets calculated in the same order as it is displayed (this is important for both the order of the generated price equation and for the order in which warning/error messages occur and "halt" the calculation)
     const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
     let message, isError = false;
-    for(let item of itemsSortedDescending)
-    {
-        if(!item.isSelected)
+    for (let item of itemsSortedDescending) {
+        if (!item.isSelected)
             continue;
 
         let [itemTotalPrice, equation, error, warning] = item.calculateTotalPrice();
@@ -1349,8 +1244,7 @@ function calculateTotalSelectedPrice()
         // should push the current equation, even if it causes an error below (so that the user can see where in the equation it happened)
         equations.push(equation);
 
-        if(error)
-        {
+        if (error) {
             console.log(error);
 
             message = error;
@@ -1358,8 +1252,7 @@ function calculateTotalSelectedPrice()
             break;
         }
 
-        if(warning)
-        {
+        if (warning) {
             console.log(warning);
 
             // only want to show first warning
@@ -1368,8 +1261,7 @@ function calculateTotalSelectedPrice()
     }
 
     const hasMessage = message !== undefined;
-    if(hasMessage)
-    {
+    if (hasMessage) {
         totalSelectedPriceMessageHolder.text(message);
         totalSelectedPriceMessageHolder.css("color", isError ? "red" : "purple");
     }
@@ -1381,23 +1273,20 @@ function calculateTotalSelectedPrice()
 }
 
 // calculates the total price of ALL items, selected or not (does not modify the price calculation area's message holder stuff)
-function calculateTotalPrice()
-{
+function calculateTotalPrice() {
     let total = 0;
     // TODO -- I should instead filter this BEFORE sorting (doesn't change anything functionally, it's just more performant that way)
     // we go through it in quantity descending order to make the equation be in the same order as the items in the grid
     // TODO -- now that this function gets called from updateItemLayout() whenever showing price in screenshot is enabled, I should probably be caching itemsSortedDescending
     // Technically, this doesn't need to sort by descending, since unlike the function which calculates total for the SELECTED price, this one is doing it for all; if an error occurs, the outcome of the values will be NaN regardless of order (the only thing that will be different is what gets logged in the console in the event of an error)
     const itemsSortedDescending = [...items.values()].sort((item1, item2) => item2.quantity - item1.quantity);
-    for(let item of itemsSortedDescending)
-    {
+    for (let item of itemsSortedDescending) {
         let [itemTotalPrice, equation, error, warning] = item.calculateTotalPrice(true); // ignore custom values
 
         // this is always done since it'll make sure that the total becomes NaN if there is an error
         total += itemTotalPrice;
 
-        if(error)
-        {
+        if (error) {
             console.log(error);
             break;
         }
@@ -1407,13 +1296,12 @@ function calculateTotalPrice()
 }
 
 // TODO -- it might be better to check whether in price calculation mode here (and/or if price is shown in the screenshot) instead of everywhere before calling this function, though that might be slower in scenarios where I have the state (of whether being in price calculation mode or not) cached.
-function updateTotalPrice()
-{
+function updateTotalPrice() {
     const totalSelectedPrice = calculateTotalSelectedPrice();
     const totalSelectedPriceFormatted = getLocaleString(totalSelectedPrice);
 
     // hasn't loaded yet
-    if(!priceCalculationItem)
+    if (!priceCalculationItem)
         return;
 
     const totalSelectedPriceInItems = +(totalSelectedPrice / priceCalculationItem.maxPrice).toFixed(2); // the unary + converts it back to a number, removing trailing zeroes
@@ -1426,13 +1314,11 @@ function updateTotalPrice()
 
     const isInPriceCalculationMode = getIsInPriceCalculationMode();
 
-    if(isInPriceCalculationMode)
+    if (isInPriceCalculationMode)
         totalSelectedPriceHolder.html(totalSelectedPriceHTML);
 
-    if(getIsPriceShownInScreenshot())
-    {
-        if(!isInPriceCalculationMode && shouldShowTotalInNormalMode)
-        {
+    if (getIsPriceShownInScreenshot()) {
+        if (!isInPriceCalculationMode && shouldShowTotalInNormalMode) {
             const totalPrice = calculateTotalPrice();
             const totalPriceFormatted = getLocaleString(totalPrice);
 
@@ -1451,24 +1337,21 @@ function updateTotalPrice()
 }
 
 
-function getIsInPriceCalculationMode()
-{
+function getIsInPriceCalculationMode() {
     return !totalSelectedPriceArea.is("[hidden]");
 }
 
-function getIsPriceShownInScreenshot()
-{
+function getIsPriceShownInScreenshot() {
     // TODO -- for this and other checkbox-related settings, should I be looking at the settings themselves for the state of things, or should I be looking at the elements that are set as visible, hidden, etc. like what I do right here?
     return !screenshotPriceHolder.prop("hidden");
 }
 
 
-function setSelectedState(item, cell, isSelected)
-{
+function setSelectedState(item, cell, isSelected) {
     item.isSelected = isSelected;
 
     // TODO -- classList.toggle() is a thing, maybe use this instead of the if/else?  toggle can either toggle based on whether the class is on the element or based on whether the second parameter passed is true.  https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList/toggle
-    if(isSelected)
+    if (isSelected)
         cell.classList.add("selected");
     else
         cell.classList.remove("selected");
@@ -1481,14 +1364,12 @@ function setSelectedState(item, cell, isSelected)
     cellSelector.find(".priceLabel").css("opacity", isSelected && item.customPriceOrMultiplier !== undefined ? 0.5 : 1);
 }
 
-function setSelectedStateAll(items, cells, isSelected)
-{
-    for(let item of items)
+function setSelectedStateAll(items, cells, isSelected) {
+    for (let item of items)
         item.isSelected = isSelected;
 
-    for(let cell of cells)
-    {
-        if(isSelected)
+    for (let cell of cells) {
+        if (isSelected)
             cell.classList.add("selected");
         else
             cell.classList.remove("selected");
@@ -1498,12 +1379,11 @@ function setSelectedStateAll(items, cells, isSelected)
 }
 
 
-async function prepareAllItemNames()
-{
+async function prepareAllItemNames() {
     const itemNames = await getAllItemNames();
 
     const prepared = [];
-    for(let itemName of itemNames)
+    for (let itemName of itemNames)
         prepared.push(fuzzysort.prepare(itemName));
 
     return prepared;
@@ -1513,10 +1393,8 @@ async function prepareAllItemNames()
 const suppliesNames = ["Axe", "Dynamite", "Saw", "Shovel", "TNT Barrel", "Pickaxe", "Bolt", "Brick", "Duct Tape", "Hammer", "Hand Drill", "Nail", "Paint Bucket", "Plank", "Screw", "Stone Block", "Tar Bucket", "Wood Panel", "Land Deed", "Mallet", "Map Piece", "Marker Stake"];
 // extraneous "item"/image names (due to how the item names are fetched) that shouldn't be included; "Honey Mask" is a duplicate of "Honey Face Mask"
 const nameBlacklist = new Set(["Chicken Feed", "Cow Feed", "Pig Feed", "Sheep Feed", "Red Lure", "Green Lure", "Blue Lure", "Purple Lure", "Gold Lure", "Fishing Net", "Mystery Net", "Goat Feed", "Lobster Trap", "Duck Trap", "Honey Mask", "Field", "Apple Tree", "Shop Icon", "Coins", "Experience", "Caffè Latte", "Caffè Mocha"]);
-async function getAllItemNames()
-{
-    const fetchPortion = (pageName) =>
-    {
+async function getAllItemNames() {
+    const fetchPortion = (pageName) => {
         const url = "https://hayday.fandom.com/api.php?" +
             new URLSearchParams({
                 origin: "*",
@@ -1539,19 +1417,17 @@ async function getAllItemNames()
     return productNames.concat(cropNames, animalProductNames, suppliesNames).filter(name => !nameBlacklist.has(name));
 }
 
-function updateFuzzyMatches()
-{
+function updateFuzzyMatches(input, type) {
     // don't want the list of matches popping up when the user is trying to select/deselect items
     // also don't want to continue if the item names haven't been prepared yet; I could easily set a flag for this case and just call this function again when the prepared items are completely set up, but that would have an extra edge case of whether the name input is still focused (ultimately, the item names should get loaded and prepared quite quickly, so the user shouldn't really run into this in practice)
-    if(getIsInPriceCalculationMode() || !preparedItemNames)
+    if (getIsInPriceCalculationMode() || !preparedItemNames)
         return;
 
-    const matches = fuzzysort.go(itemNameInput.val(), preparedItemNames, {limit: 10});
+    const matches = fuzzysort.go(input.val(), preparedItemNames, { limit: 10 });
 
     const matchHTMLs = [];
     let i = 0;
-    for(let match of matches)
-    {
+    for (let match of matches) {
         i++;
 
         const div = document.createElement("div");
@@ -1559,19 +1435,17 @@ function updateFuzzyMatches()
         const button = document.createElement("button");
         button.tabIndex = -1;
         button.innerHTML = fuzzysort.highlight(match, "<b style='color: orange;'>", "</b>");
-        $(button).on("mousedown", {itemName: match.target}, (event, customParams) =>
-        {
-            itemNameInput.val(event.data.itemName);
+        $(button).on("mousedown", { itemName: match.target }, (event, customParams) => {
+            input.val(event.data.itemName);
 
             // need to wait for the mouseup event in order to refocus/reselect the input field (using .one to make sure it only happens once, and using the document as the object to ensure this occurs no matter where on the screen the mouseup happens)
             // TODO -- I need to standardise all of my arrow functions; particularly, I need to decide whether to always include the () even for single parameter, and I need to determine whether it is a good idea to have arrow functions like this that are a single line (without {}) which calls a function (I don't know how "proper" this is, and it could easily lead to accidentally forgetting the () =>, causing it to misbehave)
             // TODO -- should I keep the matches empty after the user selects one (until they start typing again)?
-            if(!customParams || !customParams.usedKeyboard) // don't want to do this if the user selected a match using the keyboard via 1-9,0
+            if (!customParams || !customParams.usedKeyboard) // don't want to do this if the user selected a match using the keyboard via 1-9,0
                 // This must be applied to every element due to how event bubble up (if you release your mouse on an item cell after clicking down on a fuzzy match, it will trigger the item's events first before bubbling/propagating up; this means that the only solution is to put the handler on every element, stop propogation, and cancel all the remaining events added via this "namespace" (.fuzzyMatchClick)).  Unfortunately, managing to click the border of an item cell on the mouseup event will end up executing that first, likely do to having same priority but having different event added order (this event is added after).
                 // TODO -- I might be able to fix this by storing the values for all 3 inputs and just modify it in my event listener below, which means that I would want to go back to using $(document) so that it has the least specificity (which means it will execute last, reverting all the values to normal).
-                $("*").one("mouseup.fuzzyMatchClick", (e) =>
-                {
-                    itemNameInput.trigger("focus");
+                $("*").one("mouseup.fuzzyMatchClick", (e) => {
+                    input.trigger("focus");
                     e.stopPropagation();
 
                     $("*").off(".fuzzyMatchClick");
@@ -1588,13 +1462,19 @@ function updateFuzzyMatches()
         matchHTMLs.push(div);
     }
 
-    fuzzyMatchesHolder.empty();
-    fuzzyMatchesHolder[0].append(...matchHTMLs);
+    if (type === 'itemSearch') {
+        fuzzyMatchesHolderItemSearch.empty();
+        fuzzyMatchesHolderItemSearch[0].append(...matchHTMLs);
+    }
+    if (type === 'priceCalc') {
+        fuzzyMatchesHolderPriceCalc.empty();
+        fuzzyMatchesHolderPriceCalc[0].append(...matchHTMLs);
+    }
+
 }
 
 
-function createSuccessfulCopyNotification()
-{
+function createSuccessfulCopyNotification() {
     let notification = document.createElement("p");
     notification.innerText = "Successfully Copied!";
     notification.classList.add("notification", "notificationSuccess");
@@ -1602,8 +1482,7 @@ function createSuccessfulCopyNotification()
     document.body.appendChild(notification);
 }
 
-function createFailedCopyNotification()
-{
+function createFailedCopyNotification() {
     let notification = document.createElement("p");
     notification.innerText = "Failed to Copy!";
     notification.classList.add("notification", "notificationFail");
@@ -1613,10 +1492,9 @@ function createFailedCopyNotification()
 
 
 // TODO -- I might want to eventually be rescaling the cells, though that would be a lot of work to modify all the css
-function rescaleScreenshotRegion()
-{
+function rescaleScreenshotRegion() {
     // If the user starts scrolling, zooming in, etc, don't want to rescale the screenshot region (I noticed this happening if a user on iOS starts scrolling in such a way where the address bar grows in size [triggering window resize])
-    if(isActivelyCopyingImage)
+    if (isActivelyCopyingImage)
         return;
 
     // I take the min of these to ensure that everything always stays on screen (it takes into account both a longer bottom text and what the width would be if all items were in the table)
@@ -1627,22 +1505,19 @@ function rescaleScreenshotRegion()
     screenshotRegion[0].style.transform = `scale(${scaleFactor})`;
 }
 
-function getSelectedItemCount()
-{
+function getSelectedItemCount() {
     let count = 0;
-    for(let item of [...items.values()])
-    {
-        if(item.isSelected)
+    for (let item of [...items.values()]) {
+        if (item.isSelected)
             count += item.customQuantity ?? item.quantity;
     }
 
     return count;
 }
 
-function getTotalItemCount()
-{
+function getTotalItemCount() {
     let count = 0;
-    for(let item of [...items.values()])
+    for (let item of [...items.values()])
         count += item.quantity; // ignore custom quantities
 
     return count;
@@ -1650,16 +1525,14 @@ function getTotalItemCount()
 
 
 /* -------- scripts/Settings.js -------- */
-function setUpAbbreviationMappingTable()
-{
-    for(let [abbreviation, abbreviationExpanded] of abbreviationMapping)
+function setUpAbbreviationMappingTable() {
+    for (let [abbreviation, abbreviationExpanded] of abbreviationMapping)
         addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded);
 
     ensureExtraAbbreviationMappingTableRow();
 }
 
-function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded)
-{
+function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded) {
     const abbreviationTableRow = document.createElement("tr");
 
     const abbreviationCell = document.createElement("td");
@@ -1685,16 +1558,14 @@ function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded)
 
     // make clicking the border/cell itself still focus the relevant input
     // .target is where the event originated from/got triggered from, and .currentTarget is where the current event callback is attached to (so if the user clicks in the input field, the target is the input field, but the current target is the td, meaning I don't need to trigger focus: https://stackoverflow.com/questions/10086427/what-is-the-exact-difference-between-currenttarget-property-and-target-property )
-    $(abbreviationCell).on("click", (e) =>
-    {
+    $(abbreviationCell).on("click", (e) => {
         // only need to focus if the cell is what was actually clicked on (target is what was clicked on [might be input or td], current target is what this callback is binded to [td])
-        if(e.target === e.currentTarget)
+        if (e.target === e.currentTarget)
             abbreviationInputSelector.trigger("focus");
     });
-    $(abbreviationExpandedCell).on("click", (e) =>
-    {
+    $(abbreviationExpandedCell).on("click", (e) => {
         // only need to focus if the cell is what was actually clicked on (target is what was clicked on [might be input or td], current target is what this callback is binded to [td])
-        if(e.target === e.currentTarget)
+        if (e.target === e.currentTarget)
             abbreviationExpandedInputSelector.trigger("focus");
     });
 
@@ -1708,16 +1579,14 @@ function addAbbreviationMappingTableRow(abbreviation, abbreviationExpanded)
     abbreviationMappingTable.append(abbreviationTableRow);
 }
 
-function handleAbbreviationChange(event)
-{
+function handleAbbreviationChange(event) {
     const previousValue = event.target.dataset.previousValue;
 
     const row = $(event.target).closest("tr");
     const cells = row.find("input");
     const abbreviation = cells.eq(0);
 
-    if(!abbreviation.val().length)
-    {
+    if (!abbreviation.val().length) {
         removeAbbreviation(previousValue);
         row.remove();
 
@@ -1738,49 +1607,44 @@ function handleAbbreviationChange(event)
 };
 
 
-function removeAbbreviation(abbreviation)
-{
+function removeAbbreviation(abbreviation) {
     abbreviationMapping.delete(abbreviation);
 
     saveAllToLocalStorage();
 }
 
-function updateAbbreviation(oldAbbreviation, newAbbreviation, abbreviationExpanded)
-{
+function updateAbbreviation(oldAbbreviation, newAbbreviation, abbreviationExpanded) {
     abbreviationMapping.set(newAbbreviation, abbreviationExpanded);
 
-    if(oldAbbreviation !== newAbbreviation)
+    if (oldAbbreviation !== newAbbreviation)
         removeAbbreviation(oldAbbreviation);
     else
         saveAllToLocalStorage(); // removeAbbreviation() handles saving when called; no need to do it twice in that case
 }
 
 
-function ensureExtraAbbreviationMappingTableRow()
-{
+function ensureExtraAbbreviationMappingTableRow() {
     const lastRow = abbreviationMappingTable.find("tr").last();
     const abbreviation = lastRow.find("input").first();
 
-    if(!abbreviation.length || abbreviation.val().length)
+    if (!abbreviation.length || abbreviation.val().length)
         addAbbreviationMappingTableRow("", "");
 }
 
 
 /* -------- scripts/Persist.js -------- */
-function loadAllFromLocalStorage()
-{
+function loadAllFromLocalStorage() {
     const sItems = localStorage.getItem("items");
-    if(sItems)
-    {
+    if (sItems) {
         // converts each "object" back into an object of type Item (not sure if I really need to do this)
         let kvps = JSON.parse(sItems);
-        for(let i in kvps)
+        for (let i in kvps)
             kvps[i][1] = Object.assign(new Item(), kvps[i][1]);
         items = new Map(kvps);
     }
 
     const sAbbreviationMapping = localStorage.getItem("abbreviationMapping");
-    if(sAbbreviationMapping)
+    if (sAbbreviationMapping)
         abbreviationMapping = new Map(JSON.parse(sAbbreviationMapping));
 
     const sBottomText = localStorage.getItem("bottomText");
@@ -1837,8 +1701,7 @@ function loadAllFromLocalStorage()
     ignoreLocaleCheckBox.prop("checked", sIgnoreLocale);
 }
 
-function saveAllToLocalStorage()
-{
+function saveAllToLocalStorage() {
     // console.log("Saved");
     saveItemsToLocalStorage();
     localStorage.setItem("abbreviationMapping", JSON.stringify([...abbreviationMapping]));
@@ -1864,8 +1727,7 @@ function saveAllToLocalStorage()
     localStorage.setItem("ignoreLocale", shouldIgnoreLocale);
 }
 
-function saveItemsToLocalStorage()
-{
+function saveItemsToLocalStorage() {
     localStorage.setItem("items", JSON.stringify([...items], (key, value) => Item.fieldsToOmitFromLocalStorage.has(key) ? undefined : value));
 }
 
@@ -2152,11 +2014,9 @@ Some future features:
 
 There might be a bug or two since I added a lot of features today (in order to release v1.0 ASAP); sorry for any inconveniences.`]
 ]);
-function setUpChangelog()
-{
+function setUpChangelog() {
     let changes = [];
-    for(let [versionName, versionChanges] of changelog)
-    {
+    for (let [versionName, versionChanges] of changelog) {
         const changeHolder = document.createElement("div");
 
         const changeHeader = document.createElement("h2");
@@ -2177,12 +2037,11 @@ function setUpChangelog()
 }
 
 // TODO -- I might want to put all of the local storage-related calls in wrapper functions in Persist.js
-function handleVersionChange()
-{
+function handleVersionChange() {
     const latestVersion = changelog.keys().next().value;
     const sLastUsedVersion = localStorage.getItem("lastUsedVersion");
 
-    if(sLastUsedVersion === latestVersion)
+    if (sLastUsedVersion === latestVersion)
         return;
 
     localStorage.setItem("lastUsedVersion", latestVersion);
