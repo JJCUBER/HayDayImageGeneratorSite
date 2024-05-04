@@ -49,45 +49,52 @@
         </h2>
 
         <!-- Label MUST be outside of the div for the dimensions of the autocomplete/fuzzy match options to be proper -->
-        <label for="itemNameInput">Name</label>
-        <!-- this div needs to have position be relative in order for 100% width of the inner div to not cover the whole document ( https://stackoverflow.com/questions/6625116/css-position-absolute-and-full-width-problem ) -->
-        <div style="display: inline-block; position: relative;">
-            <!-- using em to be relative to the font size, since the font size is increased on iOS (to 16px) -->
-            <input type="text" id="itemNameInput" style="width: 8em;" autocomplete="off">
-            <div id="fuzzyMatchesHolder"></div>
+        
+        <div class="itemContainer">
+            <div class="itemInputContainer">
+                <div>
+                    <label for="itemNameInput">Name</label>
+                <!-- this div needs to have position be relative in order for 100% width of the inner div to not cover the whole document ( https://stackoverflow.com/questions/6625116/css-position-absolute-and-full-width-problem ) -->
+                    <div style="display: inline-block; position: relative;">
+                        <!-- using em to be relative to the font size, since the font size is increased on iOS (to 16px) -->
+                        <input type="text" id="itemNameInput" style="width: 8em;" autocomplete="off">
+                        <div id="fuzzyMatchesHolder"></div>
+                    </div>
+                </div>
+                <div>
+                    <label for="itemQuantityInput">Quantity</label>
+                    <input type="text" id="itemQuantityInput" style="width: 3em;">
+                </div>
+                <div>
+                    <label for="itemPriceOrMultiplierInput">Price/Multiplier</label>
+                    <input type="text" id="itemPriceOrMultiplierInput" style="width: 3em;">
+                </div>
+                <div class="submitAndDeleteButtonContainer">
+                    <button id="itemSubmitButton">Submit</button>
+                    <button id="itemDeleteButton" class="disableInPriceCalculationMode">Delete</button>
+                </div>
+            </div>
+            <div class="utilityButtonContainer">
+                <button id="clearAllButton" class="disableInPriceCalculationMode">Clear All</button>
+                <div class="copyImageButtonContainer">
+                    <button id="copyImageToClipboardButton">Copy Image to Clipboard</button>
+                    <div id="copyImageLoadingWheel" class="loading" hidden></div>
+                </div>
+                <button id="copyAsTextListButton">Copy as Text List</button>
+            </div>
+            <div class="priceCalculationInputContainer">
+                <button id="priceCalculationToggleButton"><span id="priceCalculationModeStateSpan">Enable</span> Price Calculation Mode</button>
+                <button id="selectAllButton" class="disableOutsidePriceCalculationMode">Select All</button>
+                <button id="clearSelectionButton" class="disableOutsidePriceCalculationMode">Clear Selection</button>
+                <button id="subtractSelectedQuantitiesButton" class="disableOutsidePriceCalculationMode">Subtract Selected Quantities</button>
+                <button id="deleteSelectedButton" class="disableOutsidePriceCalculationMode">Delete Selected</button>
+            </div>
+            <div class="extraButtonsContainer">
+                <button id="resetCustomValuesButton" class="disableOutsidePriceCalculationMode">Reset Custom Values</button>
+                <button id="equationVisibilityToggleButton" class="disableOutsidePriceCalculationMode"><span id="equationVisibilityStateSpan">Show</span> Equation</button>
+                <button id="unselectedItemsVisibilityToggleButton" class="disableOutsidePriceCalculationMode"><span id="unselectedItemsVisibilityStateSpan">Hide</span> Unselected</button>
+            </div>
         </div>
-
-        <label for="itemQuantityInput">Quantity</label>
-        <input type="text" id="itemQuantityInput" style="width: 3em;">
-
-        <label for="itemPriceOrMultiplierInput">Price/Multiplier</label>
-        <input type="text" id="itemPriceOrMultiplierInput" style="width: 3em;">
-
-        <button id="itemSubmitButton" style="margin-left: 10px;">Submit</button>
-        <button id="itemDeleteButton" class="disableInPriceCalculationMode">Delete</button>
-
-        <br>
-        <div style="height: 2px;"></div>
-
-        <button id="clearAllButton" class="disableInPriceCalculationMode">Clear All</button>
-        <button id="copyImageToClipboardButton">Copy Image to Clipboard</button>
-        <button id="copyAsTextListButton">Copy as Text List</button>
-        <div id="copyImageLoadingWheel" class="loading" hidden></div>
-        <br>
-        <div style="height: 2px;"></div>
-        <button id="priceCalculationToggleButton"><span id="priceCalculationModeStateSpan">Enable</span> Price Calculation Mode</button>
-        <button id="selectAllButton" class="disableOutsidePriceCalculationMode">Select All</button>
-        <button id="clearSelectionButton" class="disableOutsidePriceCalculationMode">Clear Selection</button>
-        <button id="subtractSelectedQuantitiesButton" class="disableOutsidePriceCalculationMode">Subtract Selected Quantities</button>
-        <button id="deleteSelectedButton" class="disableOutsidePriceCalculationMode">Delete Selected</button>
-        <br>
-        <div style="height: 2px;"></div>
-        <button id="resetCustomValuesButton" class="disableOutsidePriceCalculationMode">Reset Custom Values</button>
-        <button id="equationVisibilityToggleButton" class="disableOutsidePriceCalculationMode"><span id="equationVisibilityStateSpan">Show</span> Equation</button>
-        <button id="unselectedItemsVisibilityToggleButton" class="disableOutsidePriceCalculationMode"><span id="unselectedItemsVisibilityStateSpan">Hide</span> Unselected</button>
-
-        <div style="height: 15px;"></div>
-        <hr>
         <div id="totalSelectedPriceArea" hidden>
             <h2>Total Selected Price</h2>
             <p id="totalSelectedPriceHolder"></p>

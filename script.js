@@ -147,8 +147,6 @@ $(document).ready(() =>
         itemsPerRow = parseInt(event.target.value); // must convert to integer/number (since I do + calculations with it and don't want it to concat like a string)
         itemsPerRowLabel.text(itemsPerRow);
         updateItemLayout();
-
-        rescaleScreenshotRegion();
     });
 
 
@@ -273,9 +271,6 @@ $(document).ready(() =>
         bottomText[0].innerText = event.target.value;
 
         saveAllToLocalStorage();
-
-        // I only do this on change and not on input because I fear that it would cause too much lag/input delay from processing this
-        rescaleScreenshotRegion();
     });
     bottomText.on("click", () =>
     {
@@ -639,11 +634,6 @@ $(document).ready(() =>
     // TODO -- maybe make this some class and/or css media query-related thing?
     if(isRunningIOS())
         $("input, textarea").css("font-size", "16px");
-
-
-    // rescale screenshot region whenever window/page is resized (also invokes it for the first time immediately to ensure it starts scaled properly)
-    $(window).on("resize", rescaleScreenshotRegion);
-    rescaleScreenshotRegion();
 });
 
 
@@ -1124,9 +1114,6 @@ function updateItemLayout()
 
         itemTable.append(tableRow);
     }
-
-    // I don't want to call this every time, since I feel like it slows down everything (I instead only call it when relevant things resize [items per row count, window size, bottom text])
-    // rescaleScreenshotRegion();
 }
 
 function formatItemPriceLabel(priceOrMultiplier)
@@ -1216,7 +1203,6 @@ function copyImageToClipboard()
             isActivelyCopyingImage = false;
 
             copyImageLoadingWheel.prop("hidden", true);
-            rescaleScreenshotRegion(); // restore screenshot region's scaling
             itemsPerRowSlider.prop("disabled", false);
         });
 }
@@ -1609,22 +1595,6 @@ function createFailedCopyNotification()
     notification.classList.add("notification", "notificationFail");
     $(notification).on("animationend", notification.remove);
     document.body.appendChild(notification);
-}
-
-
-// TODO -- I might want to eventually be rescaling the cells, though that would be a lot of work to modify all the css
-function rescaleScreenshotRegion()
-{
-    // If the user starts scrolling, zooming in, etc, don't want to rescale the screenshot region (I noticed this happening if a user on iOS starts scrolling in such a way where the address bar grows in size [triggering window resize])
-    if(isActivelyCopyingImage)
-        return;
-
-    // I take the min of these to ensure that everything always stays on screen (it takes into account both a longer bottom text and what the width would be if all items were in the table)
-    const heuristicFactor = document.documentElement.clientWidth / ((itemsPerRow + 1) * 110); // estimated width of table with all items in row filled in
-    const actualFactor = 0.9 * document.documentElement.clientWidth / screenshotRegion.width(); // actual calculated width of table (including bottom text)
-
-    const scaleFactor = Math.min(1, heuristicFactor, actualFactor); // 1 is included in the list of mins because I don't want to ever scale up, only down (if needed)
-    screenshotRegion[0].style.transform = `scale(${scaleFactor})`;
 }
 
 function getSelectedItemCount()
