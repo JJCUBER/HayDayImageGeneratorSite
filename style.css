@@ -367,7 +367,7 @@ td.selected:hover
     transition: color 0.2s;
 }
 
-#fuzzyMatchesHolder
+.fuzzyMatchesHolder
 {
     position: absolute;
     width: 100%;
@@ -383,18 +383,18 @@ td.selected:hover
 }
 
 /* animates when the list of matches goes from empty -> non-empty */
-#fuzzyMatchesHolder:not(:empty)
+.fuzzyMatchesHolder:not(:empty)
 {
     animation: fadeIn 0.2s forwards;
 }
 
 /* due to how the display: flex works, this holder being empty still blocks input for a region of the screen (causing issues with phones that wrap the price input to the next line) */
-#fuzzyMatchesHolder:empty
+.fuzzyMatchesHolder:empty
 {
     display: none;
 }
 
-#fuzzyMatchesHolder button
+.fuzzyMatchesHolder button
 {
     width: 100%;
     height: 100%;
@@ -409,12 +409,12 @@ td.selected:hover
     padding-left: 1em; /* prevent overlap with 1-9,0 number label */
 }
 
-#fuzzyMatchesHolder div
+.fuzzyMatchesHolder div
 {
     position: relative; /* needed so that absolute position of p children works properly */
 }
 
-#fuzzyMatchesHolder p
+.fuzzyMatchesHolder p
 {
     position: absolute;
     top: 50%;

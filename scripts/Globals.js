@@ -19,7 +19,7 @@ let shouldHidePriceOrMultiplier;
 let defaultQuantity, defaultPriceOrMultiplier;
 let shouldRefocusNameOnSubmit, shouldIgnoreLocale;
 
-let fuzzyMatchesHolder;
+let itemNameFuzzyMatchesHolder, priceCalculationItemFuzzyMatchesHolder;
 
 
 let preparedItemNames;

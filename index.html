@@ -22,10 +22,10 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js" integrity="sha512-sdAWRZSPnL/EbXixTyBhffFggsxlPrxEMLKvseTBMfY3MGxYvXvm83S/WddNpx1tXPylK5warEPp7uu1yiNsgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=2.12">
+        <link rel="stylesheet" href="style.css?v=2.13">
 
 
-        <script src="script.js?v=2.12"></script>
+        <script src="script.js?v=2.13"></script>
     </head>
     <body>
         <h2>Options</h2>
@@ -54,7 +54,7 @@
         <div style="display: inline-block; position: relative;">
             <!-- using em to be relative to the font size, since the font size is increased on iOS (to 16px) -->
             <input type="text" id="itemNameInput" style="width: 8em;" autocomplete="off">
-            <div id="fuzzyMatchesHolder"></div>
+            <div id="itemNameFuzzyMatchesHolder" class="fuzzyMatchesHolder"></div>
         </div>
 
         <label for="itemQuantityInput">Quantity</label>
@@ -157,7 +157,12 @@
                     <hr>
 
                     <h2>Item for Price Calculation</h2>
-                    <input type="text" id="priceCalculationItemInput" style="width: 8em;">
+                    <!-- this div needs to have position be relative in order for 100% width of the inner div to not cover the whole document ( https://stackoverflow.com/questions/6625116/css-position-absolute-and-full-width-problem ) -->
+                    <div style="display: inline-block; position: relative;">
+                        <!-- using em to be relative to the font size, since the font size is increased on iOS (to 16px) -->
+                        <input type="text" id="priceCalculationItemInput" style="width: 8em;" autocomplete="off">
+                        <div id="priceCalculationItemFuzzyMatchesHolder" class="fuzzyMatchesHolder"></div>
+                    </div>
 
                     <!-- TODO -- finish implementing
                     <hr>
@@ -217,7 +222,7 @@
                         <label for="ignoreLocaleCheckBox">Ignore Locale</label>
                         <!-- TODO -- figure out how to disable animations and transitions via js; I don't see a good way currently -->
                         <!-- <br> -->
-                        <!-- <input type="checkbox" id="reduceAnimationsCheckBox" style="display: none;"> -->
+                        <!-- <input type="checkbox" id="reduceAnimationsCheckBox"> -->
                         <!-- <label for="reduceAnimationsCheckBox">Reduce Animations</label> -->
                     </div>
                 </div>
@@ -252,7 +257,7 @@
                             <li>
                                 using firefox and not enabling (in <b>about:config</b>)
                                 <br>
-                                <b>dom.events.asyncClipboard.clipboardItem</b>.
+                                <b>dom.events.asyncClipboard.clipboardItem</b>
                             </li>
                         </ol>
                     </p>

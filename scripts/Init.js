@@ -54,8 +54,8 @@ $(document).ready(() =>
 
     copyImageLoadingWheel = $("#copyImageLoadingWheel");
 
-    fuzzyMatchesHolder = $("#fuzzyMatchesHolder");
-
+    itemNameFuzzyMatchesHolder = $("#itemNameFuzzyMatchesHolder");
+    priceCalculationItemFuzzyMatchesHolder = $("#priceCalculationItemFuzzyMatchesHolder");
 
     itemsPerRowSlider.on("input", (event) =>
     {
@@ -67,10 +67,13 @@ $(document).ready(() =>
     });
 
 
-    itemNameInput.on("focus", updateFuzzyMatches);
+    itemNameInput.on("focus", () =>
+    {
+        updateFuzzyMatches(itemNameInput, itemNameFuzzyMatchesHolder);
+    });
     itemNameInput.on("blur", () =>
     {
-        fuzzyMatchesHolder.empty();
+        itemNameFuzzyMatchesHolder.empty();
     });
 
     itemNameInput.on("keydown", (e) =>
@@ -82,7 +85,7 @@ $(document).ready(() =>
         if(selection === 0)
             selection = 10;
 
-        const buttons = fuzzyMatchesHolder.find("button");
+        const buttons = itemNameFuzzyMatchesHolder.find("button");
         if(buttons.length < selection)
             return;
 
@@ -94,7 +97,7 @@ $(document).ready(() =>
         handleAddingItem(e);
 
         // this should be done AFTER handling adding the item, since we want this to show no results if enter was pressed and the name input got wiped
-        updateFuzzyMatches();
+        updateFuzzyMatches(itemNameInput, itemNameFuzzyMatchesHolder);
     });
     itemQuantityInput.on("keyup", handleAddingItem);
     itemPriceOrMultiplierInput.on("keyup", handleAddingItem);
@@ -238,6 +241,34 @@ $(document).ready(() =>
         saveAllToLocalStorage();
     });
 
+    priceCalculationItemInput.on("focus", () =>
+    {
+        updateFuzzyMatches(priceCalculationItemInput, priceCalculationItemFuzzyMatchesHolder);
+    });
+    priceCalculationItemInput.on("blur", () =>
+    {
+        priceCalculationItemFuzzyMatchesHolder.empty();
+    });
+    priceCalculationItemInput.on("keydown", (e) =>
+    {
+        // should use key to get the value representation of the input, allowing numpad numbers to show up like normal numbers ( https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key and https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code )
+        if(e.key.length !== 1 || e.key < '0' || e.key > '9')
+            return;
+        let selection = e.key - '0';
+        if(selection === 0)
+            selection = 10;
+
+        const buttons = priceCalculationItemFuzzyMatchesHolder.find("button");
+        if(buttons.length < selection)
+            return;
+
+        buttons.eq(selection - 1).trigger("mousedown", {usedKeyboard: true});
+        event.preventDefault();
+    });
+    priceCalculationItemInput.on("keyup", (e) =>
+    {
+        updateFuzzyMatches(priceCalculationItemInput, priceCalculationItemFuzzyMatchesHolder);
+    });
     priceCalculationItemInput.on("change", async (event) =>
     {
         let itemNameFormatted = formatItemName(event.target.value);

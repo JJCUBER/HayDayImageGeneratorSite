@@ -54,7 +54,7 @@ let shouldHidePriceOrMultiplier;
 let defaultQuantity, defaultPriceOrMultiplier;
 let shouldRefocusNameOnSubmit, shouldIgnoreLocale;
 
-let fuzzyMatchesHolder;
+let itemNameFuzzyMatchesHolder, priceCalculationItemFuzzyMatchesHolder;
 
 
 let preparedItemNames;
@@ -139,8 +139,8 @@ $(document).ready(() =>
 
     copyImageLoadingWheel = $("#copyImageLoadingWheel");
 
-    fuzzyMatchesHolder = $("#fuzzyMatchesHolder");
-
+    itemNameFuzzyMatchesHolder = $("#itemNameFuzzyMatchesHolder");
+    priceCalculationItemFuzzyMatchesHolder = $("#priceCalculationItemFuzzyMatchesHolder");
 
     itemsPerRowSlider.on("input", (event) =>
     {
@@ -152,10 +152,13 @@ $(document).ready(() =>
     });
 
 
-    itemNameInput.on("focus", updateFuzzyMatches);
+    itemNameInput.on("focus", () =>
+    {
+        updateFuzzyMatches(itemNameInput, itemNameFuzzyMatchesHolder);
+    });
     itemNameInput.on("blur", () =>
     {
-        fuzzyMatchesHolder.empty();
+        itemNameFuzzyMatchesHolder.empty();
     });
 
     itemNameInput.on("keydown", (e) =>
@@ -167,7 +170,7 @@ $(document).ready(() =>
         if(selection === 0)
             selection = 10;
 
-        const buttons = fuzzyMatchesHolder.find("button");
+        const buttons = itemNameFuzzyMatchesHolder.find("button");
         if(buttons.length < selection)
             return;
 
@@ -179,7 +182,7 @@ $(document).ready(() =>
         handleAddingItem(e);
 
         // this should be done AFTER handling adding the item, since we want this to show no results if enter was pressed and the name input got wiped
-        updateFuzzyMatches();
+        updateFuzzyMatches(itemNameInput, itemNameFuzzyMatchesHolder);
     });
     itemQuantityInput.on("keyup", handleAddingItem);
     itemPriceOrMultiplierInput.on("keyup", handleAddingItem);
@@ -323,6 +326,34 @@ $(document).ready(() =>
         saveAllToLocalStorage();
     });
 
+    priceCalculationItemInput.on("focus", () =>
+    {
+        updateFuzzyMatches(priceCalculationItemInput, priceCalculationItemFuzzyMatchesHolder);
+    });
+    priceCalculationItemInput.on("blur", () =>
+    {
+        priceCalculationItemFuzzyMatchesHolder.empty();
+    });
+    priceCalculationItemInput.on("keydown", (e) =>
+    {
+        // should use key to get the value representation of the input, allowing numpad numbers to show up like normal numbers ( https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key and https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code )
+        if(e.key.length !== 1 || e.key < '0' || e.key > '9')
+            return;
+        let selection = e.key - '0';
+        if(selection === 0)
+            selection = 10;
+
+        const buttons = priceCalculationItemFuzzyMatchesHolder.find("button");
+        if(buttons.length < selection)
+            return;
+
+        buttons.eq(selection - 1).trigger("mousedown", {usedKeyboard: true});
+        event.preventDefault();
+    });
+    priceCalculationItemInput.on("keyup", (e) =>
+    {
+        updateFuzzyMatches(priceCalculationItemInput, priceCalculationItemFuzzyMatchesHolder);
+    });
     priceCalculationItemInput.on("change", async (event) =>
     {
         let itemNameFormatted = formatItemName(event.target.value);
@@ -1539,14 +1570,14 @@ async function getAllItemNames()
     return productNames.concat(cropNames, animalProductNames, suppliesNames).filter(name => !nameBlacklist.has(name));
 }
 
-function updateFuzzyMatches()
+function updateFuzzyMatches(itemInput, fuzzyMatchesHolder)
 {
-    // don't want the list of matches popping up when the user is trying to select/deselect items
+    // don't want the list of matches popping up when the user is trying to select/deselect items (this only applies to the item name field, not the price calculation item field in settings)
     // also don't want to continue if the item names haven't been prepared yet; I could easily set a flag for this case and just call this function again when the prepared items are completely set up, but that would have an extra edge case of whether the name input is still focused (ultimately, the item names should get loaded and prepared quite quickly, so the user shouldn't really run into this in practice)
-    if(getIsInPriceCalculationMode() || !preparedItemNames)
+    if((itemInput === itemNameInput && getIsInPriceCalculationMode()) || !preparedItemNames)
         return;
 
-    const matches = fuzzysort.go(itemNameInput.val(), preparedItemNames, {limit: 10});
+    const matches = fuzzysort.go(itemInput.val(), preparedItemNames, {limit: 10});
 
     const matchHTMLs = [];
     let i = 0;
@@ -1561,17 +1592,21 @@ function updateFuzzyMatches()
         button.innerHTML = fuzzysort.highlight(match, "<b style='color: orange;'>", "</b>");
         $(button).on("mousedown", {itemName: match.target}, (event, customParams) =>
         {
-            itemNameInput.val(event.data.itemName);
+            itemInput.val(event.data.itemName);
+            // want to trigger a change immediately for the price calculation item field
+            // (I have noticed that this already gets triggered automatically if the user has manually typed anything before physically clicking on one of the buttons; however, it does not trigger if the user just continues to sequentially select multiple fuzzy matches without physically editing the text in between said clicks.  As such, this manual trigger is required even though it sometimes causes a double trigger of the change event [which shouldn't cause any issues].)
+            if(itemInput === priceCalculationItemInput)
+                itemInput.trigger("change");
 
             // need to wait for the mouseup event in order to refocus/reselect the input field (using .one to make sure it only happens once, and using the document as the object to ensure this occurs no matter where on the screen the mouseup happens)
             // TODO -- I need to standardise all of my arrow functions; particularly, I need to decide whether to always include the () even for single parameter, and I need to determine whether it is a good idea to have arrow functions like this that are a single line (without {}) which calls a function (I don't know how "proper" this is, and it could easily lead to accidentally forgetting the () =>, causing it to misbehave)
             // TODO -- should I keep the matches empty after the user selects one (until they start typing again)?
             if(!customParams || !customParams.usedKeyboard) // don't want to do this if the user selected a match using the keyboard via 1-9,0
-                // This must be applied to every element due to how event bubble up (if you release your mouse on an item cell after clicking down on a fuzzy match, it will trigger the item's events first before bubbling/propagating up; this means that the only solution is to put the handler on every element, stop propogation, and cancel all the remaining events added via this "namespace" (.fuzzyMatchClick)).  Unfortunately, managing to click the border of an item cell on the mouseup event will end up executing that first, likely do to having same priority but having different event added order (this event is added after).
+                // This must be applied to every element due to how events bubble up (if you release your mouse on an item cell after clicking down on a fuzzy match, it will trigger the item's events first before bubbling/propagating up; this means that the only solution is to put the handler on every element, stop propogation, and cancel all the remaining events added via this "namespace" (.fuzzyMatchClick)).  Unfortunately, managing to click the border of an item cell on the mouseup event will end up executing that first, likely do to having same priority but having different event added order (this event is added after).
                 // TODO -- I might be able to fix this by storing the values for all 3 inputs and just modify it in my event listener below, which means that I would want to go back to using $(document) so that it has the least specificity (which means it will execute last, reverting all the values to normal).
                 $("*").one("mouseup.fuzzyMatchClick", (e) =>
                 {
-                    itemNameInput.trigger("focus");
+                    itemInput.trigger("focus");
                     e.stopPropagation();
 
                     $("*").off(".fuzzyMatchClick");
@@ -1872,6 +1907,11 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.13", `Features:
+- Added fuzzy searching to the input field for choosing the item to calculate prices with (in settings).  (Thank you to Noahkoole for getting the ball rolling on this feature.)
+
+Misc:
+- Got rid of a misplaced period.`],
     ["v2.12", `Features:
 - Added setting to hide price/multipliers
 - Added settings for default quantity and default price/multiplier
