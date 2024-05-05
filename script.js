@@ -85,6 +85,8 @@ let isActivelyCopyingImage = false;
 /* -------- scripts/Init.js -------- */
 $(document).ready(() =>
 {
+    setUpCustomItems();
+
     itemsPerRowSlider = $("#itemsPerRowSlider");
     itemsPerRowLabel = $("#itemsPerRowLabel");
     itemNameInput = $("#itemNameInput");
@@ -659,10 +661,7 @@ $(document).ready(() =>
 
 
 
-    prepareAllItemNames().then(prepared =>
-    {
-        preparedItemNames = prepared;
-    });
+    prepareAllItemNames();
 
 
 
@@ -812,7 +811,7 @@ class Item
             priceOrMultiplier = this.priceOrMultiplier;
         }
 
-        if(!maxPrice)
+        if(!maxPrice && !customItemNames.has(this.name))
             return [NaN, "NaN", `${this.getHumanReadableName()} doesn't have a valid maximum price (${maxPrice}).`];
 
 
@@ -826,7 +825,13 @@ class Item
             warning = `The price/multiplier for ${this.getHumanReadableName()} was empty, so it was defaulted to 1x.` ;
         }
         else if(priceOrMultiplier.endsWith('x'))
+        {
+            // this is to handle when a custom item name without a maximum price reaches here
+            if(!maxPrice)
+                return [NaN, "NaN", `${this.getHumanReadableName()} is a custom item without a valid maximum price (${maxPrice}).`];
+
             mult = priceOrMultiplier.slice(0, -1);
+        }
         else if(priceOrMultiplier.endsWith('k'))
             price = `(${priceOrMultiplier.slice(0, -1)})*10^3`;
         else if(priceOrMultiplier.endsWith('m'))
@@ -957,8 +962,20 @@ function handleSpecialNames(itemName)
     return specialNameMapping.get(itemName) ?? itemName;
 }
 
+const customItemNames = new Set(["BEM Set", "SEM Set", "TEM Set", "LEM Set"]);
+function setUpCustomItems()
+{
+    for(let name of customItemNames)
+        specialNameMapping.set(convertToTitleSnakeCase(name), name);
+}
+
 function getImageUrl(itemNameTitleSnakeCase)
 {
+    // the custom item names get mapped back to themselves when getting the title snake case list, so they are in their "normal" form already at this point
+    if(customItemNames.has(itemNameTitleSnakeCase))
+        // return Promise.resolve({url: `images/${itemNameTitleSnakeCase}.png`, isCustom: true});
+        return Promise.resolve(`images/${itemNameTitleSnakeCase}.png`); // TODO -- might want to make some map for these at some point (in the event that I want the custom images to be in multiple different folders, for whatever reason)
+
     // https://www.mediawiki.org/wiki/API:Imageinfo
     // scaled down images don't work cross-site (it will work locally, but not on the hosted site)
     return fetch(`https://hayday.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:${itemNameTitleSnakeCase}.png&format=json&origin=*`)
@@ -970,8 +987,9 @@ function getImageUrl(itemNameTitleSnakeCase)
             const pageId = Object.keys(pages)[0];
             // for some reason, this works fine but the resultant wikia static image url yields a 404 from github pages ONLY when scaled down
             // return pages[pageId].imageinfo[0].thumburl;
-            //return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
+            // return pages[pageId].imageinfo[0].thumburl.split("\/revision\/latest\/scale-to-width-down")[0];
             return pages[pageId].imageinfo[0].url.split("\/revision\/")[0]; // or split on "\/revision\/latest", but I'm worried that something might change at some point
+            // return {url: pages[pageId].imageinfo[0].url.split("\/revision\/")[0], isCustom: false}; // or split on "\/revision\/latest", but I'm worried that something might change at some point
         });
 }
 
@@ -1271,6 +1289,10 @@ function copyAsTextListToClipboard()
 // maybe include Item somewhere in this function name
 function getMaxPrice(itemNameTitleSnakeCase)
 {
+    // the custom item names get mapped back to themselves when getting the title snake case list, so they are in their "normal" form already at this point
+    if(customItemNames.has(itemNameTitleSnakeCase))
+        return Promise.resolve(NaN);
+
     const properPageName = handleSpecialPageNames(itemNameTitleSnakeCase);
     const url = "https://hayday.fandom.com/api.php?" +
         new URLSearchParams({
@@ -1537,7 +1559,7 @@ async function prepareAllItemNames()
     for(let itemName of itemNames)
         prepared.push(fuzzysort.prepare(itemName));
 
-    return prepared;
+    preparedItemNames = prepared;
 }
 
 // gotten from https://hayday.fandom.com/wiki/Supplies (if I got the images for these the same way as I did for everything else, there would be a ton of building images listed as items)
@@ -1567,7 +1589,8 @@ async function getAllItemNames()
     const cropNames = await fetchPortion("Crops");
     const animalProductNames = await fetchPortion("Animal_Goods");
 
-    return productNames.concat(cropNames, animalProductNames, suppliesNames).filter(name => !nameBlacklist.has(name));
+    // concat it all together and include custom item names after filtering (just in case there ends up being overlap at some point in the future)
+    return productNames.concat(cropNames, animalProductNames, suppliesNames).filter(name => !nameBlacklist.has(name)).concat([...customItemNames.values()]);
 }
 
 function updateFuzzyMatches(itemInput, fuzzyMatchesHolder)
@@ -1907,6 +1930,8 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v2.14", `Features:
+- Added an item for each kind of set (BEM, SEM, TEM, LEM); you can now add EM sets to your list of items!`],
     ["v2.13", `Features:
 - Added fuzzy searching to the input field for choosing the item to calculate prices with (in settings).  (Thank you to Noahkoole for getting the ball rolling on this feature.)
 

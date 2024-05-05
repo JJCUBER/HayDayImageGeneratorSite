@@ -1,4 +1,6 @@
 const changelog = new Map([
+    ["v2.14", `Features:
+- Added an item for each kind of set (BEM, SEM, TEM, LEM); you can now add EM sets to your list of items!`],
     ["v2.13", `Features:
 - Added fuzzy searching to the input field for choosing the item to calculate prices with (in settings).  (Thank you to Noahkoole for getting the ball rolling on this feature.)
 

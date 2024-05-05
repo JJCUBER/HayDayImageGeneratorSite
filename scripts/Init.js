@@ -1,5 +1,7 @@
 $(document).ready(() =>
 {
+    setUpCustomItems();
+
     itemsPerRowSlider = $("#itemsPerRowSlider");
     itemsPerRowLabel = $("#itemsPerRowLabel");
     itemNameInput = $("#itemNameInput");
@@ -574,10 +576,7 @@ $(document).ready(() =>
 
 
 
-    prepareAllItemNames().then(prepared =>
-    {
-        preparedItemNames = prepared;
-    });
+    prepareAllItemNames();
 
 
 
