@@ -9,6 +9,8 @@
 
         <title>Hay Day Image Generator</title>
 
+        <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+
         <!-- Using the unminified version since it might help me debug any issues; might want to eventually use https://code.jquery.com/jquery-3.6.4.min.js -->
         <!-- Got the integrity sha/hash using https://www.srihash.org/ (found out about it here: https://stackoverflow.com/questions/51254596/how-to-get-the-integrity-value-for-a-jquery-version-for-script ); I decided to stick with the sha384 it defaults to.  I'm unsure whether to append the attribute: referrerpolicy="no-referrer" -->
         <script src="https://code.jquery.com/jquery-3.6.4.js" integrity="sha384-SCPawFAkxFucxzK6X4Gpg3lmBZqjjmM8ghZCRH8hW4C+k4wCVXFd862J1juShkQ7" crossorigin="anonymous"></script>
@@ -22,10 +24,10 @@
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js" integrity="sha512-sdAWRZSPnL/EbXixTyBhffFggsxlPrxEMLKvseTBMfY3MGxYvXvm83S/WddNpx1tXPylK5warEPp7uu1yiNsgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-        <link rel="stylesheet" href="style.css?v=2.14">
+        <link rel="stylesheet" href="style.css?v=3.0">
 
 
-        <script src="script.js?v=2.14"></script>
+        <script src="script.js?v=3.0"></script>
     </head>
     <body>
         <h2>Options</h2>
@@ -113,6 +115,34 @@
             <div class="overlayBox">
                 <button class="overlayHideButton">X</button>
                 <div class="overlayInner">
+                    <h2>Backup</h2>
+                    <button id="ExportButton">Export All</button>
+                    <button id="ImportButton">Import All</button>
+                    <input type="file" id="importFileInput" accept="application/json" style="display: none;" />
+
+                    <hr>
+
+                    <h2>Item Lists</h2>
+                    <div style="text-align: right; display: inline-block;">
+                        <!-- Annoyingly, the size calculations for select differ from that of input, so they are slightly different in width.  At first, I tried to make them be closer together, but I quickly realized that it would involve modifying the css of quite a few things, and it would likely be inconsistent across devices. -->
+                        <select id="itemListDropdown" style="width: 12em; margin-right: 1px;"></select>
+                        <button id="deleteItemListButton">Delete</button>
+                        <br>
+                        <hr style="border: 1px dashed grey;">
+                        <input type="text" id="createItemListInput" style="width: 12em;">
+                        <button id="createItemListButton">Create</button>
+                    </div>
+                    <br>
+                    <div style="text-align: left; display: inline-block;">
+                        <input type="checkbox" id="includeSettingsInItemListCheckBox">
+                        <label for="includeSettingsInItemListCheckBox">Include Settings</label>
+                        <br>
+                        <input type="checkbox" id="copyCurrentItemsFromItemListCheckBox">
+                        <label for="copyCurrentItemsFromItemListCheckBox">Copy Current Items</label>
+                    </div>
+
+                    <hr>
+
                     <!-- <div style="height: 10px;"></div> -->
                     <h2>
                         Item Abbreviations
@@ -160,7 +190,7 @@
                     <!-- this div needs to have position be relative in order for 100% width of the inner div to not cover the whole document ( https://stackoverflow.com/questions/6625116/css-position-absolute-and-full-width-problem ) -->
                     <div style="display: inline-block; position: relative;">
                         <!-- using em to be relative to the font size, since the font size is increased on iOS (to 16px) -->
-                        <input type="text" id="priceCalculationItemInput" style="width: 8em;" autocomplete="off">
+                        <input type="text" id="priceCalculationItemInput" style="width: 12em;" autocomplete="off">
                         <div id="priceCalculationItemFuzzyMatchesHolder" class="fuzzyMatchesHolder"></div>
                     </div>
 
@@ -217,6 +247,9 @@
                     <div style="text-align: left; display: inline-block;">
                         <input type="checkbox" id="refocusNameOnSubmitCheckBox">
                         <label for="refocusNameOnSubmitCheckBox">Refocus Name on Submit</label>
+                        <br>
+                        <input type="checkbox" id="focusQuantityOnAutocompleteCheckBox">
+                        <label for="focusQuantityOnAutocompleteCheckBox">Focus Quantity on Autocomplete</label>
                         <br>
                         <input type="checkbox" id="ignoreLocaleCheckBox">
                         <label for="ignoreLocaleCheckBox">Ignore Locale</label>

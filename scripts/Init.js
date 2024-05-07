@@ -1,5 +1,9 @@
 $(document).ready(() =>
 {
+    // Since there are risks that people will lose their item listings and/or settings with update v3.0, I am creating this backup at the very start as a countermeasure for the worst-case scenario (in which case I can roll back the update).
+    if(localStorage.getItem("v2.14_backup") === null)
+        localStorage.setItem("v2.14_backup", JSON.stringify(localStorage));
+
     setUpCustomItems();
 
     itemsPerRowSlider = $("#itemsPerRowSlider");
@@ -15,6 +19,13 @@ $(document).ready(() =>
 
     settingsOverlay = new Overlay("settingsOverlay", "showButton");
 
+    importFileInput = $("#importFileInput");
+    itemListDropdown = $("#itemListDropdown");
+    deleteItemListButton = $("#deleteItemListButton");
+    createItemListInput = $("#createItemListInput");
+    createItemListButton = $("#createItemListButton");
+    includeSettingsInItemListCheckBox = $("#includeSettingsInItemListCheckBox");
+    copyCurrentItemsFromItemListCheckBox = $("#copyCurrentItemsFromItemListCheckBox");
     abbreviationMappingTable = $("#abbreviationMappingTable");
     bottomTextSettingInput = $("#bottomTextSettingInput");
     textListSeparatorRadios = $("input[name='textListSeparatorGroup']");
@@ -28,6 +39,7 @@ $(document).ready(() =>
     defaultQuantityInput = $("#defaultQuantityInput");
     defaultPriceOrMultiplierInput = $("#defaultPriceOrMultiplierInput");
     refocusNameOnSubmitCheckBox = $("#refocusNameOnSubmitCheckBox");
+    focusQuantityOnAutocompleteCheckBox = $("#focusQuantityOnAutocompleteCheckBox");
     ignoreLocaleCheckBox = $("#ignoreLocaleCheckBox");
     // reduceAnimationsCheckBox = $("#reduceAnimationsCheckBox");
 
@@ -175,13 +187,85 @@ $(document).ready(() =>
 
     // these must all be after local storage is loaded (since their initial values change depending on what the user's settings had saved)
 
+    $("#ExportButton").on("click", exportAll);
+    $("#ImportButton").on("click", () =>
+    {
+        importFileInput.trigger("click");
+    });
+    importFileInput.on("change", async (event) =>
+    {
+        const files = event.target.files;
+        if(files.length)
+            importAll(await files[0].text());
+        event.target.value = null; // reset it to not have any file selected (so that if the user reselects the same file, it will trigger the "change" event to load/import it again)
+    });
 
+    itemListDropdown.on("change", (event) =>
+    {
+        deleteItemListButton.prop("disabled", event.target.value === "Default");
+
+        storeItemList();
+
+        activeItemList = event.target.value;
+
+        loadItemList();
+    });
+    deleteItemListButton.on("click", () =>
+    {
+        if(activeItemList === "Default")
+        {
+            console.log("Attempted to delete Default item list!  This shouldn't be possible; please contact JJCUBER.");
+            return;
+        }
+
+        itemLists.delete(activeItemList);
+
+        activeItemList = "Default";
+
+        loadItemList();
+    });
+    createItemListInput.on("input", (event) =>
+    {
+        createItemListButton.prop("disabled", itemLists.has(event.target.value));
+    });
+    createItemListInput.on("keyup", (event) =>
+    {
+        // create item list with current name upon clicking enter key (if it is a valid name)
+        if(event.code === "Enter" && !createItemListButton.prop("disabled"))
+            createItemListButton.trigger("click");
+    });
+    createItemListButton.on("click", () =>
+    {
+        if(itemLists.has(createItemListInput.val()))
+        {
+            console.log("Attempted to create an existing item list!  This shouldn't be possible; please contact JJCUBER.");
+            return;
+        }
+
+        storeItemList();
+
+        createNewItemList(createItemListInput.val());
+        createItemListInput.val("");
+
+        loadItemList();
+    });
+    includeSettingsInItemListCheckBox.on("click", () =>
+    {
+        shouldIncludeSettingsInItemList = !shouldIncludeSettingsInItemList;
+
+        saveAllToLocalStorage();
+    });
+    copyCurrentItemsFromItemListCheckBox.on("click", () =>
+    {
+        shouldCopyCurrentItemsFromItemList = !shouldCopyCurrentItemsFromItemList;
+
+        saveAllToLocalStorage();
+    });
+
+    // TODO -- make sure nothing related to this (including the stuff in Persist.js) needs to be called before the stuff above (for a while, this was the first section of the settings overlay, but I have since added multiple settings above it).
     setUpAbbreviationMappingTable();
 
 
-    // must use innerText to preserve newline; jquery .text() doesn't (.innerText is used instead of .text() in all bottom text-related code)
-    // I could alternatively use .html(), but that would cause issues with how the user might want to format their message, such as <Partials Accepted>
-    bottomTextSettingInput.val(bottomText[0].innerText);
     // on input for showing live modifications in the background (behind the settings popup)
     bottomTextSettingInput.on("input", event =>
     {
@@ -346,6 +430,12 @@ $(document).ready(() =>
     refocusNameOnSubmitCheckBox.on("click", () =>
     {
         shouldRefocusNameOnSubmit = !shouldRefocusNameOnSubmit;
+
+        saveAllToLocalStorage();
+    });
+    focusQuantityOnAutocompleteCheckBox.on("click", () =>
+    {
+        shouldFocusQuantityOnAutocomplete = !shouldFocusQuantityOnAutocomplete;
 
         saveAllToLocalStorage();
     });

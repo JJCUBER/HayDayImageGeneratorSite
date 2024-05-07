@@ -53,7 +53,7 @@ button + button
     margin-left: 10px;
 }
 
-button, input, textarea
+button, input, textarea, select
 {
     border-style: solid;
 }
@@ -69,7 +69,7 @@ input, textarea
 }
 
 /* only want to affect text-type inputs; otherwise, it messes up sliders, radio buttons, and checkboxes */
-button, input[type="text"], textarea
+button, input[type="text"], textarea, select
 {
     border-radius: 0;
     border-width: 2px;
@@ -554,4 +554,3 @@ td.selected:hover
 {
     text-align: right;
 }
-

@@ -113,3 +113,84 @@ function ensureExtraAbbreviationMappingTableRow()
         addAbbreviationMappingTableRow("", "");
 }
 
+// TODO -- double check to make sure that there are no issues arising when in price calculation mode while importing
+function exportAll()
+{
+    let blob = new Blob([JSON.stringify(JSON.stringify(localStorage))], {type: "application/json"}); // need to do it twice to get double quotes properly escaped
+
+    let aElement = document.createElement("a");
+    aElement.href = URL.createObjectURL(blob);
+    aElement.download = `Full Export -- ${(new Date()).toISOString()}.json`;
+    aElement.hidden = true;
+    document.body.appendChild(aElement);
+
+    aElement.click();
+    aElement.remove();
+}
+
+function importAll(jsonBlob)
+{
+    const json = JSON.parse(JSON.parse(jsonBlob));
+    // TODO -- should I be wiping local storage entirely before doing this?  (Basically, should I force all "missing" settings from this imported json to be defaulted to whatever value it should have, or should I leave those missing settings the same as how they currently are?)
+    for(let [key, value] of Object.entries(json))
+        localStorage.setItem(key, value);
+
+    loadAllFromLocalStorage();
+    updateItemLayout();
+}
+
+// Both settings directly pertaining to item lists are excluded since it is confusing to have them also be tied to item lists.
+const excludeFromItemLists = ["activeItemList", "itemLists", "includeSettingsInItemList", "copyCurrentItemsFromItemList", "lastUsedVersion", "v2.14_backup"];
+function createItemListObject(shouldIncludeItems)
+{
+    let obj = {};
+    if(shouldIncludeSettingsInItemList)
+    {
+        // grab everything (other than excluded)
+        obj = {...localStorage};
+        for(let key of excludeFromItemLists)
+            delete obj[key];
+    }
+    // grab items if allowed
+    obj.items = shouldIncludeItems ? localStorage.items : JSON.stringify([]);
+
+    return obj;
+}
+
+function createNewItemList(name)
+{
+    const obj = createItemListObject(shouldCopyCurrentItemsFromItemList || name === "Default");
+
+    activeItemList = name;
+    deleteItemListButton.prop("disabled", activeItemList === "Default");
+
+    const option = new Option(activeItemList);
+    itemListDropdown.append(option);
+    $(option).prop("selected", true);
+
+    itemLists.set(activeItemList, obj);
+}
+
+function storeItemList()
+{
+    const obj = createItemListObject(true);
+    itemLists.set(activeItemList, obj);
+
+    saveAllToLocalStorage();
+}
+
+function loadItemList()
+{
+    // Need to save first to make sure information on the active item list is up to date (including the data within itemLists itself).
+    saveAllToLocalStorage();
+
+    // update local storage where relevant
+    const obj = itemLists.get(activeItemList);
+    for(let key of Object.keys(obj))
+        localStorage[key] = obj[key];
+
+    // load in changes made to local storage (this also makes the Create button disabled, as desired)
+    loadAllFromLocalStorage();
+    updateItemLayout();
+}
+

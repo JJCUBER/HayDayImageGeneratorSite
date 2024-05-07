@@ -1,4 +1,12 @@
 const changelog = new Map([
+    ["v3.0", `Features:
+- Added Item Lists!  You can now seamlessly create multiple separate item lists, swap between them, duplicate them, delete them, and edit them separately.  (Please note: in the [hopefully unlikely] event that any issues arise where you suddenly lose all of your items in your current list, please note that I made this update separately back up everything.  If this occurs, please contact me [JJCUBER] and I will try to figure out what is going on [and temporarily roll back the update].)
+- Added importing and exporting of everything (settings and items/item lists).  You can now create external, local backups of everything and even share them with others (just export it then share the file with whomever you want).
+- Made selecting an item name fuzzy match (autocompletion) immediately focus the quantity textbox.  (You can disable this in settings.)
+
+Misc:
+- Gave the website an icon/"logo" (it is currently just the diamond ring from the game since my original idea couldn't be seen [due to size constraints]).
+- Some other minor code improvements and cleanup`],
     ["v2.14", `Features:
 - Added an item for each kind of set (BEM, SEM, TEM, LEM); you can now add EM sets to your list of items!`],
     ["v2.13", `Features:

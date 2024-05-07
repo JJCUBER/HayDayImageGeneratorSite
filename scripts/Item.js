@@ -921,11 +921,16 @@ function updateFuzzyMatches(itemInput, fuzzyMatchesHolder)
                 // TODO -- I might be able to fix this by storing the values for all 3 inputs and just modify it in my event listener below, which means that I would want to go back to using $(document) so that it has the least specificity (which means it will execute last, reverting all the values to normal).
                 $("*").one("mouseup.fuzzyMatchClick", (e) =>
                 {
-                    itemInput.trigger("focus");
+                    if(shouldFocusQuantityOnAutocomplete && itemInput === itemNameInput)
+                        itemQuantityInput.trigger("select");
+                    else
+                        itemInput.trigger("focus");
                     e.stopPropagation();
 
                     $("*").off(".fuzzyMatchClick");
                 });
+            else if(shouldFocusQuantityOnAutocomplete && itemInput === itemNameInput)
+                itemQuantityInput.trigger("select");
         });
 
         const p = document.createElement("p");

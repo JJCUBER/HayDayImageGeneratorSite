@@ -38,7 +38,7 @@ let textListSeparatorSelectedRadio = 0;
 
 let itemsPerRowSlider, itemsPerRowLabel, itemNameInput, itemQuantityInput, itemPriceOrMultiplierInput, itemTable;
 let bottomText, screenshotRegion, screenshotPriceHolder;
-let settingsOverlay, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput, showPriceInScreenshotCheckBox, showTotalInNormalModeCheckBox, hidePriceOrMultiplierCheckBox, defaultQuantityInput, defaultPriceOrMultiplierInput, refocusNameOnSubmitCheckBox, ignoreLocaleCheckBox/*, reduceAnimationsCheckBox*/;
+let settingsOverlay, importFileInput, itemListDropdown, deleteItemListButton, createItemListInput, createItemListButton, includeSettingsInItemListCheckBox, copyCurrentItemsFromItemListCheckBox, abbreviationMappingTable, bottomTextSettingInput, textListSeparatorRadios, textListCustomSeparatorInput, textListSeparatorCustomRadio, textListFormatInput, priceCalculationItemInput, showPriceInScreenshotCheckBox, showTotalInNormalModeCheckBox, hidePriceOrMultiplierCheckBox, defaultQuantityInput, defaultPriceOrMultiplierInput, refocusNameOnSubmitCheckBox, focusQuantityOnAutocompleteCheckBox, ignoreLocaleCheckBox/*, reduceAnimationsCheckBox*/;
 let priceCalculationModeStateSpan;
 let disableInPriceCalculationModeElems, disableOutsidePriceCalculationModeElems;
 let equationVisibilityStateSpan, unselectedItemsVisibilityStateSpan;
@@ -49,10 +49,12 @@ let priceCalculationItem;
 let priceCalculationModeSelectionInfo;
 let changelogOverlay, failedCopyOverlay, contactOverlay;
 let copyImageLoadingWheel;
+let activeItemList;
+let shouldIncludeSettingsInItemList, shouldCopyCurrentItemsFromItemList;
 let shouldShowTotalInNormalMode; // FIXME -- I'm starting to think more and more that this shouldn't be a variable, since the state is already completely coupled with the checkbox; adding this variable just prevents a get...() call that queries the checkbox with jquery to check if it's checked
 let shouldHidePriceOrMultiplier;
 let defaultQuantity, defaultPriceOrMultiplier;
-let shouldRefocusNameOnSubmit, shouldIgnoreLocale;
+let shouldRefocusNameOnSubmit, shouldFocusQuantityOnAutocomplete, shouldIgnoreLocale;
 
 let itemNameFuzzyMatchesHolder, priceCalculationItemFuzzyMatchesHolder;
 
@@ -61,6 +63,8 @@ let preparedItemNames;
 
 
 let items = new Map();
+
+let itemLists = new Map();
 
 let abbreviationMapping = new Map([
     ["tnt", "tnt barrel"],
@@ -85,6 +89,10 @@ let isActivelyCopyingImage = false;
 /* -------- scripts/Init.js -------- */
 $(document).ready(() =>
 {
+    // Since there are risks that people will lose their item listings and/or settings with update v3.0, I am creating this backup at the very start as a countermeasure for the worst-case scenario (in which case I can roll back the update).
+    if(localStorage.getItem("v2.14_backup") === null)
+        localStorage.setItem("v2.14_backup", JSON.stringify(localStorage));
+
     setUpCustomItems();
 
     itemsPerRowSlider = $("#itemsPerRowSlider");
@@ -100,6 +108,13 @@ $(document).ready(() =>
 
     settingsOverlay = new Overlay("settingsOverlay", "showButton");
 
+    importFileInput = $("#importFileInput");
+    itemListDropdown = $("#itemListDropdown");
+    deleteItemListButton = $("#deleteItemListButton");
+    createItemListInput = $("#createItemListInput");
+    createItemListButton = $("#createItemListButton");
+    includeSettingsInItemListCheckBox = $("#includeSettingsInItemListCheckBox");
+    copyCurrentItemsFromItemListCheckBox = $("#copyCurrentItemsFromItemListCheckBox");
     abbreviationMappingTable = $("#abbreviationMappingTable");
     bottomTextSettingInput = $("#bottomTextSettingInput");
     textListSeparatorRadios = $("input[name='textListSeparatorGroup']");
@@ -113,6 +128,7 @@ $(document).ready(() =>
     defaultQuantityInput = $("#defaultQuantityInput");
     defaultPriceOrMultiplierInput = $("#defaultPriceOrMultiplierInput");
     refocusNameOnSubmitCheckBox = $("#refocusNameOnSubmitCheckBox");
+    focusQuantityOnAutocompleteCheckBox = $("#focusQuantityOnAutocompleteCheckBox");
     ignoreLocaleCheckBox = $("#ignoreLocaleCheckBox");
     // reduceAnimationsCheckBox = $("#reduceAnimationsCheckBox");
 
@@ -260,13 +276,85 @@ $(document).ready(() =>
 
     // these must all be after local storage is loaded (since their initial values change depending on what the user's settings had saved)
 
+    $("#ExportButton").on("click", exportAll);
+    $("#ImportButton").on("click", () =>
+    {
+        importFileInput.trigger("click");
+    });
+    importFileInput.on("change", async (event) =>
+    {
+        const files = event.target.files;
+        if(files.length)
+            importAll(await files[0].text());
+        event.target.value = null; // reset it to not have any file selected (so that if the user reselects the same file, it will trigger the "change" event to load/import it again)
+    });
 
+    itemListDropdown.on("change", (event) =>
+    {
+        deleteItemListButton.prop("disabled", event.target.value === "Default");
+
+        storeItemList();
+
+        activeItemList = event.target.value;
+
+        loadItemList();
+    });
+    deleteItemListButton.on("click", () =>
+    {
+        if(activeItemList === "Default")
+        {
+            console.log("Attempted to delete Default item list!  This shouldn't be possible; please contact JJCUBER.");
+            return;
+        }
+
+        itemLists.delete(activeItemList);
+
+        activeItemList = "Default";
+
+        loadItemList();
+    });
+    createItemListInput.on("input", (event) =>
+    {
+        createItemListButton.prop("disabled", itemLists.has(event.target.value));
+    });
+    createItemListInput.on("keyup", (event) =>
+    {
+        // create item list with current name upon clicking enter key (if it is a valid name)
+        if(event.code === "Enter" && !createItemListButton.prop("disabled"))
+            createItemListButton.trigger("click");
+    });
+    createItemListButton.on("click", () =>
+    {
+        if(itemLists.has(createItemListInput.val()))
+        {
+            console.log("Attempted to create an existing item list!  This shouldn't be possible; please contact JJCUBER.");
+            return;
+        }
+
+        storeItemList();
+
+        createNewItemList(createItemListInput.val());
+        createItemListInput.val("");
+
+        loadItemList();
+    });
+    includeSettingsInItemListCheckBox.on("click", () =>
+    {
+        shouldIncludeSettingsInItemList = !shouldIncludeSettingsInItemList;
+
+        saveAllToLocalStorage();
+    });
+    copyCurrentItemsFromItemListCheckBox.on("click", () =>
+    {
+        shouldCopyCurrentItemsFromItemList = !shouldCopyCurrentItemsFromItemList;
+
+        saveAllToLocalStorage();
+    });
+
+    // TODO -- make sure nothing related to this (including the stuff in Persist.js) needs to be called before the stuff above (for a while, this was the first section of the settings overlay, but I have since added multiple settings above it).
     setUpAbbreviationMappingTable();
 
 
-    // must use innerText to preserve newline; jquery .text() doesn't (.innerText is used instead of .text() in all bottom text-related code)
-    // I could alternatively use .html(), but that would cause issues with how the user might want to format their message, such as <Partials Accepted>
-    bottomTextSettingInput.val(bottomText[0].innerText);
     // on input for showing live modifications in the background (behind the settings popup)
     bottomTextSettingInput.on("input", event =>
     {
@@ -431,6 +519,12 @@ $(document).ready(() =>
     refocusNameOnSubmitCheckBox.on("click", () =>
     {
         shouldRefocusNameOnSubmit = !shouldRefocusNameOnSubmit;
+
+        saveAllToLocalStorage();
+    });
+    focusQuantityOnAutocompleteCheckBox.on("click", () =>
+    {
+        shouldFocusQuantityOnAutocomplete = !shouldFocusQuantityOnAutocomplete;
 
         saveAllToLocalStorage();
     });
@@ -1629,11 +1723,16 @@ function updateFuzzyMatches(itemInput, fuzzyMatchesHolder)
                 // TODO -- I might be able to fix this by storing the values for all 3 inputs and just modify it in my event listener below, which means that I would want to go back to using $(document) so that it has the least specificity (which means it will execute last, reverting all the values to normal).
                 $("*").one("mouseup.fuzzyMatchClick", (e) =>
                 {
-                    itemInput.trigger("focus");
+                    if(shouldFocusQuantityOnAutocomplete && itemInput === itemNameInput)
+                        itemQuantityInput.trigger("select");
+                    else
+                        itemInput.trigger("focus");
                     e.stopPropagation();
 
                     $("*").off(".fuzzyMatchClick");
                 });
+            else if(shouldFocusQuantityOnAutocomplete && itemInput === itemNameInput)
+                itemQuantityInput.trigger("select");
         });
 
         const p = document.createElement("p");
@@ -1823,6 +1922,87 @@ function ensureExtraAbbreviationMappingTableRow()
         addAbbreviationMappingTableRow("", "");
 }
 
+// TODO -- double check to make sure that there are no issues arising when in price calculation mode while importing
+function exportAll()
+{
+    let blob = new Blob([JSON.stringify(JSON.stringify(localStorage))], {type: "application/json"}); // need to do it twice to get double quotes properly escaped
+
+    let aElement = document.createElement("a");
+    aElement.href = URL.createObjectURL(blob);
+    aElement.download = `Full Export -- ${(new Date()).toISOString()}.json`;
+    aElement.hidden = true;
+    document.body.appendChild(aElement);
+
+    aElement.click();
+    aElement.remove();
+}
+
+function importAll(jsonBlob)
+{
+    const json = JSON.parse(JSON.parse(jsonBlob));
+    // TODO -- should I be wiping local storage entirely before doing this?  (Basically, should I force all "missing" settings from this imported json to be defaulted to whatever value it should have, or should I leave those missing settings the same as how they currently are?)
+    for(let [key, value] of Object.entries(json))
+        localStorage.setItem(key, value);
+
+    loadAllFromLocalStorage();
+    updateItemLayout();
+}
+
+// Both settings directly pertaining to item lists are excluded since it is confusing to have them also be tied to item lists.
+const excludeFromItemLists = ["activeItemList", "itemLists", "includeSettingsInItemList", "copyCurrentItemsFromItemList", "lastUsedVersion", "v2.14_backup"];
+function createItemListObject(shouldIncludeItems)
+{
+    let obj = {};
+    if(shouldIncludeSettingsInItemList)
+    {
+        // grab everything (other than excluded)
+        obj = {...localStorage};
+        for(let key of excludeFromItemLists)
+            delete obj[key];
+    }
+    // grab items if allowed
+    obj.items = shouldIncludeItems ? localStorage.items : JSON.stringify([]);
+
+    return obj;
+}
+
+function createNewItemList(name)
+{
+    const obj = createItemListObject(shouldCopyCurrentItemsFromItemList || name === "Default");
+
+    activeItemList = name;
+    deleteItemListButton.prop("disabled", activeItemList === "Default");
+
+    const option = new Option(activeItemList);
+    itemListDropdown.append(option);
+    $(option).prop("selected", true);
+
+    itemLists.set(activeItemList, obj);
+}
+
+function storeItemList()
+{
+    const obj = createItemListObject(true);
+    itemLists.set(activeItemList, obj);
+
+    saveAllToLocalStorage();
+}
+
+function loadItemList()
+{
+    // Need to save first to make sure information on the active item list is up to date (including the data within itemLists itself).
+    saveAllToLocalStorage();
+
+    // update local storage where relevant
+    const obj = itemLists.get(activeItemList);
+    for(let key of Object.keys(obj))
+        localStorage[key] = obj[key];
+
+    // load in changes made to local storage (this also makes the Create button disabled, as desired)
+    loadAllFromLocalStorage();
+    updateItemLayout();
+}
+
 
 /* -------- scripts/Persist.js -------- */
 function loadAllFromLocalStorage()
@@ -1837,12 +2017,49 @@ function loadAllFromLocalStorage()
         items = new Map(kvps);
     }
 
+    const sIncludeSettingsInItemList = (localStorage.getItem("includeSettingsInItemList") ?? "true") === "true"; // default to true
+    shouldIncludeSettingsInItemList = sIncludeSettingsInItemList;
+    includeSettingsInItemListCheckBox.prop("checked", sIncludeSettingsInItemList);
+
+    const sCopyCurrentItemsFromItemList = (localStorage.getItem("copyCurrentItemsFromItemList") ?? "false") === "true"; // default to false
+    shouldCopyCurrentItemsFromItemList = sCopyCurrentItemsFromItemList;
+    copyCurrentItemsFromItemListCheckBox.prop("checked", sCopyCurrentItemsFromItemList);
+
+    activeItemList = localStorage.getItem("activeItemList") ?? "Default";
+    deleteItemListButton.prop("disabled", activeItemList === "Default");
+
+    // The item and settings for the currently selected item list should already be "active" when loading the page (they were loaded when the user selected the respective item list last time, or if there is no item list yet, then what they have loaded/active is what is created as "Default").
+    // I've decided to treat it kind of as transactions; when a new item list is selected, the active main items and settings are stored into the previously selected item list, then the new item list is loaded.  This makes the most sense since it avoids issues with things related to needing to only save items to localStorage in async functions.
+    const sItemLists = localStorage.getItem("itemLists");
+    if(sItemLists)
+    {
+        let kvps = JSON.parse(sItemLists);
+        itemLists = new Map(kvps);
+    }
+    itemListDropdown.empty();
+    for(let name of itemLists.keys())
+    {
+        const option = new Option(name);
+        itemListDropdown.append(option);
+        if(activeItemList === name)
+            $(option).prop("selected", true);
+    }
+    if(!itemLists.has("Default"))
+        createNewItemList("Default");
+    // The input for creating an item list starts empty; if one of the item lists is named the empty string (which is allowed), then the button needs to start disabled.
+    // createItemListButton.prop("disabled", itemLists.has(""));
+    // This should instead use the actual value of the input field since this function can be called by import all while this field is populated with something other than ""
+    createItemListButton.prop("disabled", itemLists.has(createItemListInput.val()));
+
     const sAbbreviationMapping = localStorage.getItem("abbreviationMapping");
     if(sAbbreviationMapping)
         abbreviationMapping = new Map(JSON.parse(sAbbreviationMapping));
 
-    const sBottomText = localStorage.getItem("bottomText");
-    bottomText[0].innerText = sBottomText ?? "Partials Accepted"; // just like the abbreviations, I give a "reasonable" default
+    const sBottomText = localStorage.getItem("bottomText") ?? "Partials Accepted"; // just like the abbreviations, I give a "reasonable" default
+    bottomTextSettingInput.val(sBottomText);
+    // must use innerText to preserve newline; jquery .text() doesn't (.innerText is used instead of .text() in all bottom text-related code)
+    // I could alternatively use .html(), but that would cause issues with how the user might want to format their message, such as <Partials Accepted>
+    bottomText[0].innerText = sBottomText;
 
     // clientWidth found from https://stackoverflow.com/questions/1248081/how-to-get-the-browser-viewport-dimensions
     const sItemsPerRow = localStorage.getItem("itemsPerRow") ?? Math.min(Math.floor(document.documentElement.clientWidth / 110), 8); // default up to 8 (however much fits; the exact calculation for the width a cell takes up is 8 + ct*100 + (ct-1)*10  AKA  110*ct - 2, but I rounded it slightly)
@@ -1890,6 +2107,10 @@ function loadAllFromLocalStorage()
     shouldRefocusNameOnSubmit = sRefocusNameOnSubmit;
     refocusNameOnSubmitCheckBox.prop("checked", sRefocusNameOnSubmit);
 
+    const sFocusQuantityOnAutocomplete = (localStorage.getItem("focusQuantityOnAutocomplete") ?? "true") === "true"; // default to true // TODO -- is this a good idea (default: true)?
+    shouldFocusQuantityOnAutocomplete = sFocusQuantityOnAutocomplete;
+    focusQuantityOnAutocompleteCheckBox.prop("checked", sFocusQuantityOnAutocomplete);
+
     const sIgnoreLocale = (localStorage.getItem("ignoreLocale") ?? "false") === "true"; // default to false
     shouldIgnoreLocale = sIgnoreLocale;
     ignoreLocaleCheckBox.prop("checked", sIgnoreLocale);
@@ -1897,8 +2118,13 @@ function loadAllFromLocalStorage()
 
 function saveAllToLocalStorage()
 {
-    // console.log("Saved");
     saveItemsToLocalStorage();
+
+    localStorage.setItem("includeSettingsInItemList", shouldIncludeSettingsInItemList);
+    localStorage.setItem("copyCurrentItemsFromItemList", shouldCopyCurrentItemsFromItemList);
+    localStorage.setItem("activeItemList", activeItemList);
+    localStorage.setItem("itemLists", JSON.stringify([...itemLists]));
+
     localStorage.setItem("abbreviationMapping", JSON.stringify([...abbreviationMapping]));
     localStorage.setItem("bottomText", bottomText[0].innerText); // must use innerText for newlines to be handled properly
     // localStorage.setItem("bottomText", bottomTextSettingInput.val()); // can just use the setting input's value instead, though maybe I should keep it consistent with the loadAll, due to the way I load it into the bottom text then into the setting
@@ -1910,7 +2136,7 @@ function saveAllToLocalStorage()
 
     // TODO -- finish up "Selections category and add it here; might want to combine thing right below this into this"
 
-    localStorage.setItem("showPriceInScreenshot", showPriceInScreenshotCheckBox.prop("checked"));
+    localStorage.setItem("showPriceInScreenshot", showPriceInScreenshotCheckBox.prop("checked")); // TODO -- I should make my use of a separate variable vs using the checkbox directly consistent
     localStorage.setItem("showTotalInNormalMode", shouldShowTotalInNormalMode);
 
     localStorage.setItem("hidePriceOrMultiplier", shouldHidePriceOrMultiplier);
@@ -1919,6 +2145,7 @@ function saveAllToLocalStorage()
     localStorage.setItem("defaultPriceOrMultiplier", defaultPriceOrMultiplier);
 
     localStorage.setItem("refocusNameOnSubmit", shouldRefocusNameOnSubmit);
+    localStorage.setItem("focusQuantityOnAutocomplete", shouldFocusQuantityOnAutocomplete);
     localStorage.setItem("ignoreLocale", shouldIgnoreLocale);
 }
 
@@ -1930,6 +2157,14 @@ function saveItemsToLocalStorage()
 
 /* -------- scripts/Changelog.js -------- */
 const changelog = new Map([
+    ["v3.0", `Features:
+- Added Item Lists!  You can now seamlessly create multiple separate item lists, swap between them, duplicate them, delete them, and edit them separately.  (Please note: in the [hopefully unlikely] event that any issues arise where you suddenly lose all of your items in your current list, please note that I made this update separately back up everything.  If this occurs, please contact me [JJCUBER] and I will try to figure out what is going on [and temporarily roll back the update].)
+- Added importing and exporting of everything (settings and items/item lists).  You can now create external, local backups of everything and even share them with others (just export it then share the file with whomever you want).
+- Made selecting an item name fuzzy match (autocompletion) immediately focus the quantity textbox.  (You can disable this in settings.)
+
+Misc:
+- Gave the website an icon/"logo" (it is currently just the diamond ring from the game since my original idea couldn't be seen [due to size constraints]).
+- Some other minor code improvements and cleanup`],
     ["v2.14", `Features:
 - Added an item for each kind of set (BEM, SEM, TEM, LEM); you can now add EM sets to your list of items!`],
     ["v2.13", `Features:
