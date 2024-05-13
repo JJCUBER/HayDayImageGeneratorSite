@@ -1,4 +1,6 @@
 const changelog = new Map([
+    ["v3.1", `Bug Fix:
+- Items with a maximum possible market price (not your price, but the one from HayDay) at or above 1,000 would be incorrectly calculated.  I do not know which items are above 1k, but "Peanut Fudge" is something impacted by this.  If you have this item in your list, remove it and readd it to fix the issue!`],
     ["v3.0", `Features:
 - Added Item Lists!  You can now seamlessly create multiple separate item lists, swap between them, duplicate them, delete them, and edit them separately.  (Please note: in the [hopefully unlikely] event that any issues arise where you suddenly lose all of your items in your current list, please note that I made this update separately back up everything.  If this occurs, please contact me [JJCUBER] and I will try to figure out what is going on [and temporarily roll back the update].)
 - Added importing and exporting of everything (settings and items/item lists).  You can now create external, local backups of everything and even share them with others (just export it then share the file with whomever you want).

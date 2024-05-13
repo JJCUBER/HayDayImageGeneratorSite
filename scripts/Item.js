@@ -602,7 +602,7 @@ function getMaxPrice(itemNameTitleSnakeCase)
         {
             // const priceRange = $(html).find("aside.portable-infobox span[title='Coin(s)']").first().parent().text();
             const priceRange = $(html).find("aside.portable-infobox div[data-source='price']").children().text();
-            const maxPrice = parseInt(priceRange.split(" to ")[1]);
+            const maxPrice = parseInt(priceRange.split(" to ")[1].replaceAll(",", "")); // parseInt doesn't handle separators
             console.log(itemNameTitleSnakeCase, "max price:", maxPrice);
             return maxPrice;
         }).catch(e =>
