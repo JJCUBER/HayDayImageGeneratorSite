@@ -1,4 +1,11 @@
 const changelog = new Map([
+    ["v3.2", `NEW Site:
+- After much work, I have recently released the first official version of the NEW site!  I have completely rewritten EVERYTHING from scratch with a focus on having a more modern look and being easier to use on mobile.  There are also a ton of new features!  For example, you can customize the colors of everything.  I strongly recommend moving over to the new site as all future/planned features will only be implemented there.  You can check it out here:
+https://hd.jjtechdev.com/
+
+Supporting:
+- This new site took a ton of my time and effort to make.  Of course, I do not expect anything in return, but if you like the new site and want to help support me in implementing even more features down the road, you can donate here:
+https://ko-fi.com/jjcuber`],
     ["v3.1", `Bug Fix:
 - Items with a maximum possible market price (not your price, but the one from HayDay) at or above 1,000 would be incorrectly calculated.  I do not know which items are above 1k, but "Peanut Fudge" is something impacted by this.  If you have this item in your list, remove it and readd it to fix the issue!`],
     ["v3.0", `Features:

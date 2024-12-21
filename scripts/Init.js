@@ -664,6 +664,11 @@ $(document).ready(() =>
         contactOverlay.hideButton.trigger("click");
     });
 
+    $("#tryNewSiteButton").on("click", () =>
+    {
+        window.open("https://hd.jjtechdev.com/", "_blank");
+    });
+
 
 
     prepareAllItemNames();
